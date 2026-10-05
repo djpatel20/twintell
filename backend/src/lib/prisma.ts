@@ -26,3 +26,13 @@ prisma.$connect()
   .catch((err) => {
     logger.warn({ err }, '⚠️ Prisma initial connection warning (will retry on queries)');
   });
+
+// Keepalive heartbeat ping every 3 minutes to prevent Supabase pooler idle connection drop
+const KEEPALIVE_INTERVAL_MS = 3 * 60 * 1000;
+setInterval(async () => {
+  try {
+    await prisma.$queryRawUnsafe('SELECT 1');
+  } catch (err) {
+    logger.debug({ err }, 'Prisma keepalive ping failed (will reconnect on next query)');
+  }
+}, KEEPALIVE_INTERVAL_MS).unref();
