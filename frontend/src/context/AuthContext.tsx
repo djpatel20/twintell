@@ -6,6 +6,12 @@ import { api } from '../lib/api-client';
 import { User, Role, Company } from '../types';
 import { Session } from '@supabase/supabase-js';
 
+interface SignUpResult {
+  error: Error | null;
+  session?: Session | null;
+  message?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -13,7 +19,7 @@ interface AuthContextType {
   company: Company | null;
   isLoading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<SignUpResult>;
   signInWithOAuth: (provider: 'google' | 'linkedin_oidc') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -112,25 +118,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ? new Error(error.message) : null };
   };
 
-  const signUpWithEmail = async (email: string, password: string, name: string) => {
+  const signUpWithEmail = async (email: string, password: string, name: string): Promise<SignUpResult> => {
     setIsLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          full_name: name,
-        },
-      },
-    });
+    try {
+      // 1. First attempt registration via backend API.
+      // This uses supabaseAdmin to create the user with email_confirm: true,
+      // completely avoiding Supabase email send rate limits (over_email_send_rate_limit).
+      try {
+        await api.post('/api/register', { email, password, name });
 
-    if (!error && data.session) {
-      setSession(data.session);
-      await fetchUserProfile();
+        // User created & auto-confirmed! Sign in immediately to establish active session & JWT token.
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          setIsLoading(false);
+          return { error: new Error(signInError.message) };
+        }
+
+        if (signInData.session) {
+          setSession(signInData.session);
+          await fetchUserProfile();
+        }
+
+        setIsLoading(false);
+        return { error: null, session: signInData.session };
+      } catch (backendErr: any) {
+        // If user already exists, return immediate error
+        if (backendErr?.code === 'USER_EXISTS' || (backendErr?.message && backendErr.message.includes('already exists'))) {
+          setIsLoading(false);
+          return { error: new Error(backendErr.message || 'An account with this email already exists. Please sign in.') };
+        }
+
+        // If backend route is temporarily unreachable (e.g. during deployment spin-up), fallback to direct Supabase client signUp
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name,
+              full_name: name,
+            },
+          },
+        });
+
+        if (error) {
+          setIsLoading(false);
+          let userMsg = error.message;
+          if (error.message.includes('rate limit') || (error as any).code === 'over_email_send_rate_limit') {
+            userMsg = 'Email rate limit reached. Please disable "Confirm email" in Supabase Auth settings or try again shortly.';
+          }
+          return { error: new Error(userMsg) };
+        }
+
+        if (data.session) {
+          setSession(data.session);
+          await fetchUserProfile();
+          setIsLoading(false);
+          return { error: null, session: data.session };
+        } else {
+          setIsLoading(false);
+          return {
+            error: null,
+            session: null,
+            message: 'Account created! Please check your email to verify your account before logging in.',
+          };
+        }
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      return { error: new Error(err.message || 'Signup failed') };
     }
-    setIsLoading(false);
-    return { error: error ? new Error(error.message) : null };
   };
 
   const signInWithOAuth = async (provider: 'google' | 'linkedin_oidc') => {

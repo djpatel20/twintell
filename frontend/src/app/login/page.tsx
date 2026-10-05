@@ -25,14 +25,14 @@ function LoginContent() {
 
   // If already logged in, redirect accordingly
   useEffect(() => {
-    if (session && user) {
+    if (session) {
       if (role === null) {
         router.push('/onboarding');
       } else {
         router.push('/');
       }
     }
-  }, [session, user, role, router]);
+  }, [session, role, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,13 +51,20 @@ function LoginContent() {
         const res = await signUpWithEmail(email, password, name);
         if (res.error) {
           setErrorMsg(res.error.message);
+        } else if (res.session) {
+          setSuccessMsg('Account created successfully! Redirecting to setup...');
+          router.push('/onboarding');
         } else {
-          setSuccessMsg('Account created successfully! Redirecting...');
+          setSuccessMsg(
+            res.message || 'Account created! Please check your email to verify your account, then sign in.'
+          );
         }
       } else {
         const res = await signInWithEmail(email, password);
         if (res.error) {
           setErrorMsg(res.error.message);
+        } else {
+          router.push(role === null ? '/onboarding' : '/');
         }
       }
     } catch (err: any) {

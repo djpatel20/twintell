@@ -19,4 +19,9 @@ router.post('/onboarding', requireAuth, (req, res, next) => {
   authController.onboard(req, res, next);
 });
 
+// POST /api/register — Signs up user with auto-confirmed email (bypasses rate limit)
+router.post('/register', (req, res, next) => {
+  authController.register(req, res, next);
+});
+
 export default router;

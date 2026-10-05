@@ -1,6 +1,7 @@
 import { prisma } from '../../lib/prisma';
+import { supabaseAdmin } from '../../lib/supabase';
 import { AppError } from '../../middleware/error-handler';
-import { OnboardingInput, UpdateMeInput } from './auth.schema';
+import { OnboardingInput, UpdateMeInput, RegisterInput } from './auth.schema';
 import { Role } from '@prisma/client';
 
 function slugify(text: string): string {
@@ -219,6 +220,55 @@ export class AuthService {
     }
 
     return this.getMe(userId);
+  }
+
+  /**
+   * Registers a new user with auto-confirmed email using supabaseAdmin.
+   * This prevents "over_email_send_rate_limit" and allows immediate sign-in.
+   */
+  async register(input: RegisterInput) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: input.email,
+      password: input.password,
+      email_confirm: true,
+      user_metadata: {
+        name: input.name,
+        full_name: input.name,
+      },
+    });
+
+    if (authError || !authData.user) {
+      if (
+        authError?.message?.toLowerCase().includes('already registered') ||
+        authError?.message?.toLowerCase().includes('already been registered')
+      ) {
+        throw new AppError('An account with this email already exists. Please sign in.', 400, 'USER_EXISTS');
+      }
+      throw new AppError(authError?.message || 'Failed to create user account.', 400, 'REGISTRATION_FAILED');
+    }
+
+    // Provision user in Prisma DB
+    const dbUser = await prisma.user.upsert({
+      where: { id: authData.user.id },
+      create: {
+        id: authData.user.id,
+        email: input.email,
+        name: input.name,
+        role: null,
+      },
+      update: {
+        name: input.name,
+      },
+    });
+
+    return {
+      data: {
+        id: dbUser.id,
+        email: dbUser.email,
+        name: dbUser.name,
+        role: dbUser.role,
+      },
+    };
   }
 }
 

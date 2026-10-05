@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from './auth.service';
-import { updateMeSchema, onboardingSchema } from './auth.schema';
+import { updateMeSchema, onboardingSchema, registerSchema } from './auth.schema';
 import { AppError } from '../../middleware/error-handler';
 
 export class AuthController {
@@ -40,6 +40,16 @@ export class AuthController {
       const validatedData = onboardingSchema.parse(req.body);
       const result = await authService.onboard(req.user.id, validatedData);
       return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validatedData = registerSchema.parse(req.body);
+      const result = await authService.register(validatedData);
+      return res.status(201).json(result);
     } catch (error) {
       next(error);
     }
