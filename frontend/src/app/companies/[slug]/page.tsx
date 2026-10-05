@@ -14,6 +14,9 @@ import { Tabs } from '../../../components/ui/Tabs';
 import { PostCard } from '../../../components/feed/PostCard';
 import { EditCompanyModal } from '../../../components/companies/EditCompanyModal';
 import { EmptyState } from '../../../components/ui/EmptyState';
+import { InquiryModal } from '../../../components/products/InquiryModal';
+import { AddEditProductModal } from '../../../components/products/AddEditProductModal';
+import { ProductCard } from '../../../components/products/ProductCard';
 import {
   MapPin,
   Calendar,
@@ -28,6 +31,7 @@ import {
   AlertCircle,
   ExternalLink,
   Tag,
+  Plus,
 } from 'lucide-react';
 import { Post, Product } from '../../../types';
 
@@ -41,6 +45,9 @@ export default function CompanyProfilePage() {
   const [activeTab, setActiveTab] = useState<'posts' | 'products' | 'about'>('posts');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isInquiryModalOpen, setIsInquiryModalOpen] = useState(false);
+  const [selectedProductForInquiry, setSelectedProductForInquiry] = useState<Product | null>(null);
+  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
 
   // 1. Fetch Company Profile
   const {
@@ -223,7 +230,8 @@ export default function CompanyProfilePage() {
                             if (!user) {
                               router.push('/login');
                             } else {
-                              alert(`Inquiry feature: Contact supplier for ${company.name} (Coming in Products & Inquiries slice)`);
+                              setSelectedProductForInquiry(null);
+                              setIsInquiryModalOpen(true);
                             }
                           }}
                           leftIcon={<Mail className="w-4 h-4" />}
@@ -297,47 +305,50 @@ export default function CompanyProfilePage() {
             {/* Tab 2: Products Catalog Grid */}
             {activeTab === 'products' && (
               <div className="space-y-4">
+                {isOwner && (
+                  <div className="flex items-center justify-between bg-primary-50/50 p-4 rounded-xl border border-primary-100">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800">Company Catalog Management</h4>
+                      <p className="text-[11px] text-slate-500">List and showcase your wholesale supplies to procurement buyers.</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => setIsAddProductModalOpen(true)}
+                      leftIcon={<Plus className="w-3.5 h-3.5" />}
+                      className="font-bold shadow-xs"
+                    >
+                      Add Product
+                    </Button>
+                  </div>
+                )}
+
                 {isProductsLoading ? (
-                  <div className="card-base p-6 text-center text-xs text-slate-400">Loading products...</div>
+                  <div className="card-base p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+                    <AlertCircle className="w-4 h-4 animate-spin text-primary-500" />
+                    <span>Loading catalogue products...</span>
+                  </div>
                 ) : products.length === 0 ? (
                   <EmptyState
                     title="No products listed"
                     description={`${company.name} has not listed any catalog products yet.`}
+                    actionLabel={isOwner ? 'Add First Product' : undefined}
+                    onAction={isOwner ? () => setIsAddProductModalOpen(true) : undefined}
                   />
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {products.map((product) => (
-                      <div key={product.id} className="card-base overflow-hidden p-4 space-y-3 flex flex-col justify-between">
-                        <div className="space-y-2">
-                          <div className="aspect-square bg-slate-100 rounded-lg overflow-hidden relative">
-                            {product.images && product.images[0] ? (
-                              <img
-                                src={product.images[0]}
-                                alt={product.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
-                                No Image
-                              </div>
-                            )}
-                          </div>
-                          <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{product.title}</h4>
-                          {product.price && (
-                            <p className="text-xs font-black text-primary-600">
-                              ₹{product.price} {product.priceUnit ? `/ ${product.priceUnit}` : ''}
-                            </p>
-                          )}
-                          {product.moq && (
-                            <p className="text-[11px] text-slate-500">
-                              Min Order: <strong className="text-slate-700">{product.moq} units</strong>
-                            </p>
-                          )}
-                        </div>
-                        <Button size="sm" variant="outline" className="w-full text-xs font-semibold">
-                          View Product
-                        </Button>
-                      </div>
+                      <ProductCard
+                        key={product.id}
+                        product={{ ...product, company }}
+                        onInquireClick={
+                          !isOwner
+                            ? () => {
+                                setSelectedProductForInquiry(product);
+                                setIsInquiryModalOpen(true);
+                              }
+                            : undefined
+                        }
+                      />
                     ))}
                   </div>
                 )}
@@ -417,6 +428,37 @@ export default function CompanyProfilePage() {
                   yearFounded: company.yearFounded,
                   logoUrl: company.logoUrl,
                   coverUrl: company.coverUrl,
+                }}
+              />
+            )}
+
+            {/* Inquiry Modal */}
+            <InquiryModal
+              isOpen={isInquiryModalOpen}
+              onClose={() => {
+                setIsInquiryModalOpen(false);
+                setSelectedProductForInquiry(null);
+              }}
+              companyId={company.id}
+              companyName={company.name}
+              companyLogo={company.logoUrl}
+              companyVerified={company.verified}
+              productId={selectedProductForInquiry?.id}
+              productTitle={selectedProductForInquiry?.title}
+              productPrice={selectedProductForInquiry?.price}
+              productPriceUnit={selectedProductForInquiry?.priceUnit}
+              productMoq={selectedProductForInquiry?.moq}
+            />
+
+            {/* Add Product Modal (Owner) */}
+            {isOwner && (
+              <AddEditProductModal
+                isOpen={isAddProductModalOpen}
+                onClose={() => setIsAddProductModalOpen(false)}
+                companyId={company.id}
+                onSuccess={() => {
+                  refetchProfile();
+                  queryClient.invalidateQueries({ queryKey: ['company-products', slug] });
                 }}
               />
             )}

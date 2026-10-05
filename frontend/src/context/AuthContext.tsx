@@ -48,23 +48,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Check initial session
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+    const checkSession = async () => {
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
       if (!mounted) return;
+      
       setSession(initialSession);
       if (initialSession) {
         await fetchUserProfile();
       } else {
         setUser(null);
       }
-      setIsLoading(false);
-    });
+      
+      if (mounted) setIsLoading(false);
+    };
+
+    checkSession();
 
     // Listen for auth state changes (login, logout, token refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       if (!mounted) return;
+      
+      // Prevent INITIAL_SESSION from unsetting loading prematurely
+      // since checkSession() handles the initial load correctly.
+      if (event === 'INITIAL_SESSION') {
+        return;
+      }
+
       setSession(currentSession);
 
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -74,7 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
-      setIsLoading(false);
+      
+      if (mounted) {
+        setIsLoading(false);
+      }
     });
 
     return () => {

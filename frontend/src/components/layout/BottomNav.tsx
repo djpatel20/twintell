@@ -9,10 +9,11 @@ import { User } from '../../types';
 
 interface BottomNavProps {
   user?: User | null;
+  isLoading?: boolean;
   onNewPostClick?: () => void;
 }
 
-export function BottomNav({ user, onNewPostClick }: BottomNavProps) {
+export function BottomNav({ user, isLoading, onNewPostClick }: BottomNavProps) {
   const pathname = usePathname();
   const isCompany = user?.role === 'COMPANY';
 

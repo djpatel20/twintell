@@ -14,10 +14,15 @@ export class CompanyService {
 
     // 1. Category filter (by slug or UUID)
     if (category && category !== 'ALL') {
-      where.OR = [
-        { categoryId: category },
-        { category: { slug: category } },
-      ];
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(category);
+      if (isUuid) {
+        where.OR = [
+          { categoryId: category },
+          { category: { slug: category } },
+        ];
+      } else {
+        where.category = { slug: category };
+      }
     }
 
     // 2. City filter (case-insensitive substring)

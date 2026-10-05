@@ -36,14 +36,16 @@ export function AppShell({
     }
   }, [isLoading, authUser, pathname, router]);
 
+  const handleNewPost = onNewPostClick || (() => router.push('/posts/new'));
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top Navbar */}
-      <Navbar user={currentUser} />
+      <Navbar user={currentUser} isLoading={isLoading} />
 
       <div className="flex-1 max-w-7xl w-full mx-auto flex">
         {/* Desktop Left Sidebar */}
-        <Sidebar user={currentUser} onNewPostClick={onNewPostClick} />
+        <Sidebar user={currentUser} isLoading={isLoading} onNewPostClick={handleNewPost} />
 
         {/* Center Main Content Area (Max feed ~680px on desktop) */}
         <main className="flex-1 min-w-0 flex justify-center px-2 sm:px-4 py-4 sm:py-6 pb-20 lg:pb-8">
@@ -59,7 +61,7 @@ export function AppShell({
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav user={currentUser} onNewPostClick={onNewPostClick} />
+      <BottomNav user={currentUser} isLoading={isLoading} onNewPostClick={handleNewPost} />
     </div>
   );
 }

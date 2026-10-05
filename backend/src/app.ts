@@ -11,22 +11,34 @@ import authRouter from './modules/auth/auth.routes';
 import categoryRouter from './modules/categories/category.routes';
 import postRouter from './modules/posts/posts.routes';
 import uploadRouter from './modules/uploads/uploads.routes';
+import productRouter from './modules/products/products.routes';
+import inquiryRouter from './modules/inquiries/inquiries.routes';
+import searchRouter from './modules/search/search.routes';
 
 const app = express();
 
 // Security Headers
 app.use(helmet());
 
-// CORS configuration - allow only FRONTEND_URL
+// CORS configuration - allows FRONTEND_URL (or comma-separated list) and Vercel deployments
+const allowedOrigins = env.FRONTEND_URL
+  ? env.FRONTEND_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
+  : ['http://localhost:3000'];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
-      if (origin === env.FRONTEND_URL || env.NODE_ENV !== 'production') {
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (
+        env.NODE_ENV !== 'production' ||
+        allowedOrigins.includes(normalizedOrigin) ||
+        (normalizedOrigin.startsWith('https://') && normalizedOrigin.endsWith('.vercel.app'))
+      ) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
   })
@@ -64,6 +76,9 @@ app.use('/api/posts', postRouter);
 app.use('/api/uploads', uploadRouter);
 app.use('/api/companies', companyRouter);
 app.use('/api/categories', categoryRouter);
+app.use('/api/products', productRouter);
+app.use('/api/inquiries', inquiryRouter);
+app.use('/api/search', searchRouter);
 
 // 404 handler
 app.use(notFoundHandler);

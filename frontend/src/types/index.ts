@@ -113,6 +113,31 @@ export interface Comment {
   };
 }
 
+export interface Inquiry {
+  id: string;
+  userId: string;
+  companyId: string;
+  productId: string | null;
+  message: string;
+  createdAt: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    headline?: string | null;
+    city?: string | null;
+  };
+  product?: {
+    id: string;
+    title: string;
+    images: string[];
+    price: number | null;
+    priceUnit: string | null;
+    moq: number | null;
+  } | null;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   nextCursor: string | null;

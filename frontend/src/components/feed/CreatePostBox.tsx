@@ -16,6 +16,7 @@ import {
   Send,
   Plus,
   Building2,
+  Maximize2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -211,11 +212,20 @@ export function CreatePostBox() {
       {isExpanded && (
         <div className="space-y-4 pt-1 border-t border-slate-100">
           {/* Topic Picker */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-primary-500" />
-              <span>Select Category Topic</span>
-            </label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary-500" />
+                <span>Select Category Topic</span>
+              </label>
+              <Link
+                href="/posts/new"
+                className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-1 hover:underline"
+              >
+                <Maximize2 className="w-3 h-3" />
+                <span>Full Page Editor</span>
+              </Link>
+            </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {TOPICS.map((t) => (
                 <button

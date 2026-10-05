@@ -19,10 +19,11 @@ import { User } from '../../types';
 
 interface SidebarProps {
   user?: User | null;
+  isLoading?: boolean;
   onNewPostClick?: () => void;
 }
 
-export function Sidebar({ user, onNewPostClick }: SidebarProps) {
+export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
   const pathname = usePathname();
   const isCompany = user?.role === 'COMPANY';
 
@@ -115,7 +116,15 @@ export function Sidebar({ user, onNewPostClick }: SidebarProps) {
 
       {/* User profile section at bottom */}
       <div className="pt-4 border-t border-slate-100">
-        {user ? (
+        {isLoading ? (
+          <div className="flex items-center gap-3 p-1.5">
+            <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 bg-slate-200 rounded w-2/3 animate-pulse" />
+              <div className="h-2 bg-slate-200 rounded w-1/2 animate-pulse" />
+            </div>
+          </div>
+        ) : user ? (
           <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 transition-colors">
             <Link
               href="/profile"

@@ -111,12 +111,12 @@ Every module inside `backend/src/modules/<feature>/` should contain:
 ## 6. Build Order
 
 - [x] **Step 1: Foundation**: Monorepo, backend skeleton (Express, config, Prisma, logger, error handler, `/health`), seed script, frontend skeleton (Next.js, Tailwind, design tokens, layout shell, base UI components).
-- [ ] **Step 2: Auth**: Supabase client on frontend, login/signup screens, `requireAuth` / `optionalAuth` / `onlyCompany` middleware, `/me`, onboarding API & screen, route protection.
-- [ ] **Step 3: Feed**: Posts, likes, comments APIs + `checkPostLimit`; Home Feed & Create Post screens; signed upload URL endpoint.
-- [ ] **Step 4: Companies**: Companies, follow, directory APIs; Company Profile & Business Directory screens; edit company profile.
-- [ ] **Step 5: Products**: Products APIs + `checkProductLimit`; Product Page & Add/Edit Product screens; inquiries.
-- [ ] **Step 6: Discovery**: Search API (ILIKE), Search Results screen, Discover screen, My Profile screen.
-- [ ] **Step 7: Deployment Readiness**: Production deployment configurations (Render for backend, Vercel for frontend), security audit, documentation.
+- [x] **Step 2: Auth**: Supabase client on frontend, login/signup screens, `requireAuth` / `optionalAuth` / `onlyCompany` middleware, `/me`, onboarding API & screen, route protection.
+- [x] **Step 3: Feed**: Posts, likes, comments APIs + `checkPostLimit`; Home Feed & Create Post screens; signed upload URL endpoint.
+- [x] **Step 4: Companies**: Companies, follow, directory APIs; Company Profile & Business Directory screens; edit company profile.
+- [x] **Step 5: Products**: Products APIs + `checkProductLimit`; Product Page & Add/Edit Product screens; inquiries.
+- [x] **Step 6: Discovery**: Search API (ILIKE), Search Results screen, Discover screen, My Profile screen.
+- [x] **Step 7: Deployment Readiness**: Production deployment configurations (Render for backend, Vercel for frontend), security audit, documentation.
 
 ---
 
