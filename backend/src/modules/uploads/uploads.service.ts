@@ -14,12 +14,28 @@ export class UploadsService {
     const storagePath = `posts/${userId}/${Date.now()}-${cleanFileName}`;
 
     try {
-      const { data, error } = await supabaseAdmin.storage
+      let { data, error } = await supabaseAdmin.storage
         .from('twintell-uploads')
         .createSignedUploadUrl(storagePath);
 
-      if (error) {
-        logger.error({ error: error.message }, 'Failed to create signed upload URL from Supabase Storage');
+      // If bucket does not exist, auto-create it on the fly and retry
+      if (error && (error.message?.toLowerCase().includes('not found') || (error as any).statusCode === '404')) {
+        logger.info('Storage bucket twintell-uploads not found. Auto-creating...');
+        await supabaseAdmin.storage.createBucket('twintell-uploads', {
+          public: true,
+          fileSizeLimit: 5242880,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+        });
+
+        const retryResult = await supabaseAdmin.storage
+          .from('twintell-uploads')
+          .createSignedUploadUrl(storagePath);
+        data = retryResult.data;
+        error = retryResult.error;
+      }
+
+      if (error || !data) {
+        logger.error({ error: error?.message }, 'Failed to create signed upload URL from Supabase Storage');
         throw new AppError('Failed to generate upload URL. Please check storage bucket configuration.', 500, 'STORAGE_ERROR');
       }
 
