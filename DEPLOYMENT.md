@@ -82,7 +82,7 @@ In **Authentication > URL Configuration**:
    - **Name**: `twintell-api`
    - **Root Directory**: `backend`
    - **Environment**: `Node`
-   - **Build Command**: `npm install && npx prisma generate && npm run build`
+   - **Build Command**: `npm install --include=dev && npx prisma generate && npm run build`
    - **Start Command**: `npm run start`
    - **Health Check Path**: `/health`
 4. Add the following **Environment Variables**:
