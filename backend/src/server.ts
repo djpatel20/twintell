@@ -17,5 +17,5 @@ const handleShutdown = (signal: string) => {
 
 process.on('SIGTERM', () => handleShutdown('SIGTERM'));
 process.on('SIGINT', () => handleShutdown('SIGINT'));
-// twintell backend reload trigger
+// twintell backend reload trigger - mumbai ap-south-1
 

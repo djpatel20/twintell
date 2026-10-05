@@ -75,6 +75,14 @@ function LoginContent() {
     }
   };
 
+  const handleLinkedInLogin = async () => {
+    setErrorMsg(null);
+    const res = await signInWithOAuth('linkedin_oidc');
+    if (res.error) {
+      setErrorMsg(res.error.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
@@ -141,14 +149,14 @@ function LoginContent() {
           )}
 
           {/* Social OAuth Buttons */}
-          <div>
+          <div className="space-y-2.5">
             <Button
               type="button"
               variant="outline"
               onClick={handleGoogleLogin}
               className="w-full font-semibold border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-2"
             >
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.04h3.88c2.27-2.09 3.66-5.17 3.66-9.14z"
@@ -167,6 +175,18 @@ function LoginContent() {
                 />
               </svg>
               <span>Continue with Google</span>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleLinkedInLogin}
+              className="w-full font-semibold border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-2 text-slate-700"
+            >
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="#0A66C2">
+                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.5 1.5 0 0 0 1.5-1.5c0-.82-.67-1.5-1.5-1.5a1.5 1.5 0 0 0-1.5 1.5c0 .83.67 1.5 1.5 1.5m1.39 9.74v-8.37H5.07v8.37h2.78z" />
+              </svg>
+              <span>Continue with LinkedIn</span>
             </Button>
 
             <div className="relative my-5">
