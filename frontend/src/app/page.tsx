@@ -17,9 +17,6 @@ import { api } from '../lib/api-client';
 import { Post, Company } from '../types';
 import {
   Sparkles,
-  TrendingUp,
-  Building2,
-  ArrowRight,
   AlertCircle,
   Loader2,
   RefreshCw,
@@ -75,106 +72,10 @@ export default function HomePage() {
     staleTime: 60000,
   });
 
-  // Fetch Trending Companies for the Right Sidebar
-  const { data: trendingData, isLoading: isTrendingLoading } = useQuery({
-    queryKey: ['trending-companies'],
-    queryFn: () => api.get<{ data: Company[] }>('/api/companies/trending?limit=5'),
-    staleTime: 60000,
-  });
-
   const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
 
-  // Right sidebar content: Dynamic Trending Companies & Quick Directory Highlights
-  const trendingSidebar = (
-    <div className="space-y-6">
-      {/* Trending Companies Card */}
-      <div className="bg-white rounded-card p-4 border border-slate-200 shadow-soft">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary-500" />
-            <h3 className="text-sm font-bold text-slate-800">Trending Companies</h3>
-          </div>
-          <Link href="/directory" className="text-xs font-semibold text-primary-500 hover:text-primary-600">
-            View all
-          </Link>
-        </div>
-
-        {isTrendingLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between gap-3 animate-pulse">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-slate-200" />
-                  <div className="space-y-1">
-                    <div className="w-24 h-3 bg-slate-200 rounded" />
-                    <div className="w-16 h-2 bg-slate-200 rounded" />
-                  </div>
-                </div>
-                <div className="w-12 h-6 bg-slate-200 rounded" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3.5">
-            {trendingData?.data && trendingData.data.length > 0 ? (
-              trendingData.data.map((company) => (
-                <div key={company.id} className="flex items-center justify-between gap-3">
-                  <Link
-                    href={`/companies/${company.slug}`}
-                    className="flex items-center gap-2.5 min-w-0 group"
-                  >
-                    <Avatar
-                      name={company.name}
-                      src={company.logoUrl || undefined}
-                      size="sm"
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1">
-                        <p className="text-xs font-bold text-slate-800 group-hover:text-primary-600 transition-colors truncate">
-                          {company.name}
-                        </p>
-                        {company.verified && <VerifiedBadge showLabel={false} />}
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate">
-                        {company.businessType} • {company.city}
-                      </p>
-                    </div>
-                  </Link>
-                  <Button size="sm" variant="secondary" className="h-7 text-xs px-2.5 shrink-0">
-                    Follow
-                  </Button>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-slate-400 py-2">No companies found</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Directory Quick Banner */}
-      <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-card p-5 text-white shadow-soft">
-        <Building2 className="w-6 h-6 text-white/90 mb-2" />
-        <h4 className="text-sm font-bold">Verified Business Directory</h4>
-        <p className="text-xs text-white/80 mt-1">
-          Explore thousands of verified Indian manufacturers and B2B suppliers.
-        </p>
-        <Link href="/directory" className="inline-block mt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            className="bg-white text-primary-600 hover:bg-slate-100 border-none font-bold"
-            rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-          >
-            Explore Directory
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-
   return (
-    <AppShell rightSidebar={trendingSidebar}>
+    <AppShell showRightSidebar={false}>
       <div className="space-y-4">
         {/* Welcome Banner Card */}
         <div className="bg-gradient-to-r from-primary-50 via-white to-primary-50 rounded-card p-5 border border-primary-100 shadow-soft">

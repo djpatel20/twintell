@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { CreatePostInput, CreateCommentInput } from './posts.schema';
 import { AppError } from '../../middleware/error-handler';
 import { Prisma } from '@prisma/client';
+import { notificationsService } from '../notifications/notifications.service';
 
 export class PostsService {
   /**
@@ -117,11 +118,18 @@ export class PostsService {
   async likePost(postId: string, userId: string) {
     const post = await prisma.post.findUnique({
       where: { id: postId },
+      include: {
+        company: {
+          select: { userId: true },
+        },
+      },
     });
 
     if (!post) {
       throw new AppError('Post not found.', 404, 'NOT_FOUND');
     }
+
+    let isNewLike = false;
 
     await prisma.$transaction(async (tx) => {
       const existingLike = await tx.like.findUnique({
@@ -131,6 +139,7 @@ export class PostsService {
       });
 
       if (!existingLike) {
+        isNewLike = true;
         await tx.like.create({
           data: { userId, postId },
         });
@@ -141,6 +150,20 @@ export class PostsService {
         });
       }
     });
+
+    // If new like and post owner is not the current user, send real-time notification
+    if (isNewLike && post.company?.userId && post.company.userId !== userId) {
+      notificationsService
+        .createAndDispatchNotification({
+          userId: post.company.userId,
+          actorId: userId,
+          type: 'LIKE',
+          postId: post.id,
+        })
+        .catch((err) => {
+          console.error('Failed to dispatch like notification:', err);
+        });
+    }
 
     return {
       success: true,

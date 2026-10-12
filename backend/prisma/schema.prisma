@@ -54,6 +54,8 @@ model User {
   comments  Comment[]
   follows   Follow[]
   inquiries Inquiry[]
+  notificationsReceived Notification[] @relation("UserNotifications")
+  notificationsSent     Notification[] @relation("ActorNotifications")
 }
 
 model Category {
@@ -133,9 +135,10 @@ model Post {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  likes    Like[]
-  comments Comment[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  likes         Like[]
+  comments      Comment[]
+  notifications Notification[]
 
   @@index([createdAt(sort: Desc)])
   @@index([companyId, createdAt(sort: Desc)])
@@ -229,3 +232,27 @@ model Subscription {
 
   @@index([planId])
 }
+
+enum NotificationType {
+  LIKE
+  FOLLOW
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  actorId   String           @db.Uuid
+  type      NotificationType
+  postId    String?          @db.Uuid
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user  User  @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor User  @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  post  Post? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([postId])
+}
+

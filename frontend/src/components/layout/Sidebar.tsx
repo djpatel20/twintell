@@ -16,6 +16,7 @@ import { clsx } from 'clsx';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { User } from '../../types';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface SidebarProps {
   user?: User | null;
@@ -26,6 +27,7 @@ interface SidebarProps {
 export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
   const pathname = usePathname();
   const isCompany = user?.role === 'COMPANY';
+  const { unreadCount } = useNotifications();
 
   const navItems = [
     { label: 'Home', href: '/', icon: Home },
@@ -33,10 +35,9 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
     { label: 'Directory', href: '/directory', icon: Building2 },
     {
       label: 'Notifications',
-      href: '#',
+      href: user ? '/notifications' : '/login',
       icon: Bell,
-      isComingSoon: true,
-      onClick: () => alert('Notifications are coming soon in Phase 2!'),
+      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined,
     },
     {
       label: 'Profile',
@@ -59,42 +60,28 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
             const Icon = item.icon;
             const isActive = item.href !== '#' && pathname === item.href;
 
-            if (item.onClick) {
-              return (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={item.onClick}
-                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5 text-slate-500" />
-                    <span>{item.label}</span>
-                  </div>
-                  {item.isComingSoon && (
-                    <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium">
-                      Soon
-                    </span>
-                  )}
-                </button>
-              );
-            }
-
             return (
               <Link
                 key={item.label}
                 href={item.href}
                 className={clsx(
-                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors',
+                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors',
                   isActive
                     ? 'bg-primary-50 text-primary-600 font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 )}
               >
-                <Icon
-                  className={clsx('w-5 h-5', isActive ? 'text-primary-600' : 'text-slate-500')}
-                />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon
+                    className={clsx('w-5 h-5', isActive ? 'text-primary-600' : 'text-slate-500')}
+                  />
+                  <span>{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className="bg-rose-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

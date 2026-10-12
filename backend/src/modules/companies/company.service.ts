@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { CompaniesQueryInput, UpdateCompanyInput } from './company.schema';
 import { AppError } from '../../middleware/error-handler';
 import { Prisma } from '@prisma/client';
+import { notificationsService } from '../notifications/notifications.service';
 
 export class CompanyService {
   /**
@@ -365,6 +366,8 @@ export class CompanyService {
       throw new AppError('You cannot follow your own company profile.', 400, 'BAD_REQUEST');
     }
 
+    let isNewFollow = false;
+
     await prisma.$transaction(async (tx) => {
       const existing = await tx.follow.findUnique({
         where: {
@@ -373,6 +376,7 @@ export class CompanyService {
       });
 
       if (!existing) {
+        isNewFollow = true;
         await tx.follow.create({
           data: { userId, companyId },
         });
@@ -383,6 +387,19 @@ export class CompanyService {
         });
       }
     });
+
+    // If new follow and company owner is not current user, send real-time notification
+    if (isNewFollow && company.userId && company.userId !== userId) {
+      notificationsService
+        .createAndDispatchNotification({
+          userId: company.userId,
+          actorId: userId,
+          type: 'FOLLOW',
+        })
+        .catch((err) => {
+          console.error('Failed to dispatch follow notification:', err);
+        });
+    }
 
     return {
       success: true,

@@ -149,3 +149,34 @@ export interface ApiError {
     message: string;
   };
 }
+
+export type NotificationType = 'LIKE' | 'FOLLOW';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  actorId: string;
+  type: NotificationType;
+  postId: string | null;
+  isRead: boolean;
+  createdAt: string;
+  actor: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    role: Role | null;
+    company?: {
+      id: string;
+      name: string;
+      slug: string;
+      logoUrl: string | null;
+      verified: boolean;
+    } | null;
+  };
+  post?: {
+    id: string;
+    content: string;
+    images: string[];
+  } | null;
+}
+

@@ -14,6 +14,7 @@ import uploadRouter from './modules/uploads/uploads.routes';
 import productRouter from './modules/products/products.routes';
 import inquiryRouter from './modules/inquiries/inquiries.routes';
 import searchRouter from './modules/search/search.routes';
+import notificationsRouter from './modules/notifications/notifications.routes';
 
 const app = express();
 
@@ -82,6 +83,7 @@ app.use('/api/categories', categoryRouter);
 app.use('/api/products', productRouter);
 app.use('/api/inquiries', inquiryRouter);
 app.use('/api/search', searchRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // 404 handler
 app.use(notFoundHandler);
