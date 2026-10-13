@@ -1,22 +1,23 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Home,
   Compass,
   Building2,
   Bell,
+  MessageSquare,
   User as UserIcon,
   Plus,
   LogIn,
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import { Avatar } from '../ui/Avatar';
-import { Button } from '../ui/Button';
-import { User } from '../../types';
-import { useNotifications } from '../../context/NotificationContext';
+} from "lucide-react";
+import { clsx } from "clsx";
+import { Avatar } from "../ui/Avatar";
+import { Button } from "../ui/Button";
+import { User } from "../../types";
+import { useNotifications } from "../../context/NotificationContext";
 
 interface SidebarProps {
   user?: User | null;
@@ -26,23 +27,43 @@ interface SidebarProps {
 
 export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
   const pathname = usePathname();
-  const isCompany = user?.role === 'COMPANY';
+  const [isMessagesActive, setIsMessagesActive] = useState(false);
+  const isCompany = user?.role === "COMPANY";
   const { unreadCount } = useNotifications();
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMessagesActive(pathname === "/profile" && window.location.search.includes("tab=inquiries"));
+    }
+  }, [pathname]);
+
   const navItems = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Discover', href: '/discover', icon: Compass },
-    { label: 'Directory', href: '/directory', icon: Building2 },
+    { label: "Home", href: "/", icon: Home, isActive: pathname === "/" },
+    { label: "Discover", href: "/discover", icon: Compass, isActive: pathname === "/discover" },
+    { label: "Directory", href: "/directory", icon: Building2, isActive: pathname === "/directory" },
     {
-      label: 'Notifications',
-      href: user ? '/notifications' : '/login',
-      icon: Bell,
-      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined,
+      label: "Messages",
+      href: user ? "/profile?tab=inquiries" : "/login",
+      icon: MessageSquare,
+      isActive: isMessagesActive,
     },
     {
-      label: 'Profile',
-      href: user ? '/profile' : '/login',
+      label: "Notifications",
+      href: user ? "/notifications" : "/login",
+      icon: Bell,
+      isActive: pathname === "/notifications",
+      badge:
+        unreadCount > 0
+          ? unreadCount > 99
+            ? "99+"
+            : String(unreadCount)
+          : undefined,
+    },
+    {
+      label: "Profile",
+      href: user ? "/profile" : "/login",
       icon: UserIcon,
+      isActive: pathname === "/profile" && !isMessagesActive,
     },
   ];
 
@@ -51,29 +72,34 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
       <div className="space-y-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 px-2">
-          <span className="text-2xl font-black tracking-tight text-primary-500">twintell</span>
+          <span className="text-2xl font-black tracking-tight text-primary-500">
+            Twintell
+          </span>
         </Link>
 
         {/* Navigation list */}
         <nav className="space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.href !== '#' && pathname === item.href;
+            const isActive = item.isActive;
 
             return (
               <Link
                 key={item.label}
                 href={item.href}
                 className={clsx(
-                  'flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors',
+                  "flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors",
                   isActive
-                    ? 'bg-primary-50 text-primary-600 font-bold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? "bg-primary-50 text-primary-600 font-bold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
                 )}
               >
                 <div className="flex items-center gap-3">
                   <Icon
-                    className={clsx('w-5 h-5', isActive ? 'text-primary-600' : 'text-slate-500')}
+                    className={clsx(
+                      "w-5 h-5",
+                      isActive ? "text-primary-600" : "text-slate-500",
+                    )}
                   />
                   <span>{item.label}</span>
                 </div>
@@ -124,16 +150,24 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
                 size="md"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
+                <p className="text-sm font-bold text-slate-800 truncate">
+                  {user.name}
+                </p>
                 <p className="text-xs text-slate-500 truncate">
-                  {user.role === 'COMPANY' ? user.company?.name || 'Company Account' : user.headline || 'Standard User'}
+                  {user.role === "COMPANY"
+                    ? user.company?.name || "Company Account"
+                    : user.headline || "Standard User"}
                 </p>
               </div>
             </Link>
           </div>
         ) : (
           <Link href="/login" className="block">
-            <Button variant="outline" className="w-full text-xs font-bold" leftIcon={<LogIn className="w-4 h-4" />}>
+            <Button
+              variant="outline"
+              className="w-full text-xs font-bold"
+              leftIcon={<LogIn className="w-4 h-4" />}
+            >
               Sign In / Register
             </Button>
           </Link>

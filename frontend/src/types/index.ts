@@ -113,13 +113,28 @@ export interface Comment {
   };
 }
 
+export interface InquiryMessage {
+  id: string;
+  inquiryId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  sender?: {
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  };
+}
+
 export interface Inquiry {
   id: string;
   userId: string;
   companyId: string;
   productId: string | null;
   message: string;
+  status?: string;
   createdAt: string;
+  updatedAt?: string;
   user?: {
     id: string;
     name: string;
@@ -127,6 +142,14 @@ export interface Inquiry {
     avatarUrl: string | null;
     headline?: string | null;
     city?: string | null;
+  };
+  company?: {
+    id: string;
+    name: string;
+    slug: string;
+    logoUrl?: string | null;
+    verified?: boolean;
+    userId?: string;
   };
   product?: {
     id: string;
@@ -136,6 +159,7 @@ export interface Inquiry {
     priceUnit: string | null;
     moq: number | null;
   } | null;
+  messages?: InquiryMessage[];
 }
 
 export interface PaginatedResponse<T> {

@@ -448,6 +448,7 @@ export default function CompanyProfilePage() {
               productPrice={selectedProductForInquiry?.price}
               productPriceUnit={selectedProductForInquiry?.priceUnit}
               productMoq={selectedProductForInquiry?.moq}
+              productImage={selectedProductForInquiry?.images?.[0]}
             />
 
             {/* Add Product Modal (Owner) */}

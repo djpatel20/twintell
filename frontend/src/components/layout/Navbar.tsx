@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { Search, Bell, Building2 } from 'lucide-react';
-import { Avatar } from '../ui/Avatar';
-import { User } from '../../types';
-import { useNotifications } from '../../context/NotificationContext';
+import React from "react";
+import Link from "next/link";
+import { Search, Bell, Building2, MessageSquare } from "lucide-react";
+import { Avatar } from "../ui/Avatar";
+import { User } from "../../types";
+import { useNotifications } from "../../context/NotificationContext";
 
 interface NavbarProps {
   user?: User | null;
@@ -22,7 +22,9 @@ export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
         {/* Mobile brand logo */}
         <div className="flex items-center gap-2 lg:hidden">
           <Link href="/" className="flex items-center gap-1.5">
-            <span className="text-xl font-bold tracking-tight text-primary-500">twintell</span>
+            <span className="text-xl font-bold tracking-tight text-primary-500">
+              Twintell
+            </span>
           </Link>
         </div>
 
@@ -31,11 +33,13 @@ export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              const term = (e.currentTarget.elements.namedItem('search') as HTMLInputElement)?.value?.trim();
+              const term = (
+                e.currentTarget.elements.namedItem("search") as HTMLInputElement
+              )?.value?.trim();
               if (term) {
                 window.location.href = `/search?q=${encodeURIComponent(term)}`;
               } else {
-                window.location.href = '/search';
+                window.location.href = "/search";
               }
             }}
             className="relative flex items-center w-full"
@@ -58,9 +62,19 @@ export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
 
         {/* Right action items */}
         <div className="flex items-center gap-3">
+          {/* Messages / Direct Chats */}
+          <Link
+            href={user ? "/profile?tab=inquiries" : "/login"}
+            title="Messages & Chats"
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors relative"
+            aria-label="View messages and chats"
+          >
+            <MessageSquare className="w-5 h-5" />
+          </Link>
+
           {/* Notifications icon */}
           <Link
-            href={user ? '/notifications' : '/login'}
+            href={user ? "/notifications" : "/login"}
             title="Notifications"
             className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors relative"
             aria-label="View notifications"
@@ -68,7 +82,7 @@ export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
               <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center rounded-full px-1 shadow-sm animate-in zoom-in">
-                {unreadCount > 99 ? '99+' : unreadCount}
+                {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </Link>

@@ -243,19 +243,44 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Primary CTA: Contact Supplier */}
+                {/* Primary CTA: Contact Supplier vs Owner Manage */}
                 <div className="space-y-2 pt-4 border-t border-slate-100">
-                  <Button
-                    size="lg"
-                    onClick={() => setIsInquiryOpen(true)}
-                    className="w-full font-bold shadow-md shadow-primary-500/20"
-                    leftIcon={<Mail className="w-4 h-4" />}
-                  >
-                    Contact Supplier / Request Quote
-                  </Button>
-                  <p className="text-center text-[11px] text-slate-400">
-                    Direct inquiry sent to supplier's procurement desk with instant notification.
-                  </p>
+                  {isOwner ? (
+                    <>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        onClick={() => setIsEditOpen(true)}
+                        className="w-full font-bold border-primary-200 text-primary-600 hover:bg-primary-50"
+                        leftIcon={<Edit3 className="w-4 h-4" />}
+                      >
+                        Manage & Edit Product
+                      </Button>
+                      <p className="text-center text-[11px] text-slate-400">
+                        You are viewing this product listing as the seller.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        size="lg"
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                          } else {
+                            setIsInquiryOpen(true);
+                          }
+                        }}
+                        className="w-full font-bold shadow-md shadow-primary-500/20"
+                        leftIcon={<Mail className="w-4 h-4" />}
+                      >
+                        Contact Supplier / Request Quote
+                      </Button>
+                      <p className="text-center text-[11px] text-slate-400">
+                        Direct inquiry sent to supplier's procurement desk with instant notification.
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -392,6 +417,7 @@ export default function ProductDetailPage() {
             productPrice={product?.price}
             productPriceUnit={product?.priceUnit}
             productMoq={product?.moq}
+            productImage={product?.images?.[0]}
           />
         )}
 

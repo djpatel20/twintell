@@ -27,6 +27,12 @@ import {
   Flame,
   CheckCircle2,
   ChevronRight,
+  FlaskConical,
+  Wheat,
+  HardHat,
+  Car,
+  Laptop,
+  Sparkle,
 } from 'lucide-react';
 
 export default function DiscoverPage() {
@@ -85,14 +91,31 @@ export default function DiscoverPage() {
 
   const getCategoryIcon = (slug: string) => {
     switch (slug) {
+      case 'industrial-plants-machinery':
+      case 'industrial-equipment-supplies':
       case 'manufacturing':
         return Factory;
-      case 'textiles':
-        return Layers;
-      case 'packaging':
-        return Boxes;
+      case 'electrical-electronics':
       case 'electronics':
         return Cpu;
+      case 'construction-building-materials':
+        return HardHat;
+      case 'textiles-apparel-fashion':
+      case 'textiles':
+        return Layers;
+      case 'food-beverages-agriculture':
+        return Wheat;
+      case 'chemicals':
+        return FlaskConical;
+      case 'packaging-printing-paper':
+      case 'packaging':
+        return Boxes;
+      case 'beauty-personal-care-wellness':
+        return Sparkle;
+      case 'automotive-spare-parts':
+        return Car;
+      case 'it-software-digital-service':
+        return Laptop;
       default:
         return Building2;
     }
@@ -166,7 +189,7 @@ export default function DiscoverPage() {
               ? Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="card-base p-4 h-24 animate-pulse bg-slate-100" />
                 ))
-              : categories.slice(0, 8).map((cat) => {
+              : categories.map((cat) => {
                   const Icon = getCategoryIcon(cat.slug);
                   return (
                     <Link

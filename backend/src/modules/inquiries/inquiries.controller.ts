@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { inquiriesService } from './inquiries.service';
-import { createInquirySchema, inquiriesQuerySchema } from './inquiries.schema';
+import {
+  createInquirySchema,
+  inquiriesQuerySchema,
+  sendInquiryMessageSchema,
+} from './inquiries.schema';
 import { AppError } from '../../middleware/error-handler';
 
 export class InquiriesController {
@@ -19,19 +23,63 @@ export class InquiriesController {
     }
   }
 
-  async getCompanyInquiries(req: Request, res: Response, next: NextFunction) {
+  async getInquiries(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.user || req.user.role !== 'COMPANY' || !req.user.companyId) {
-        throw new AppError('Forbidden: Only registered company accounts can view received inquiries.', 403, 'FORBIDDEN');
+      if (!req.user) {
+        throw new AppError('Authentication required to view inquiries.', 401, 'UNAUTHORIZED');
       }
 
       const validatedQuery = inquiriesQuerySchema.parse(req.query);
-      const result = await inquiriesService.getCompanyInquiries(req.user.companyId, validatedQuery);
+      const result = await inquiriesService.getInquiries(req.user, validatedQuery);
 
       return res.status(200).json(result);
     } catch (error) {
       next(error);
     }
+  }
+
+  async getInquiryById(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new AppError('Authentication required to access inquiry details.', 401, 'UNAUTHORIZED');
+      }
+
+      const inquiryId = req.params.id;
+      if (!inquiryId) {
+        throw new AppError('Inquiry ID is required.', 400, 'BAD_REQUEST');
+      }
+
+      const result = await inquiriesService.getInquiryById(req.user, inquiryId);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendMessage(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new AppError('Authentication required to send chat messages.', 401, 'UNAUTHORIZED');
+      }
+
+      const inquiryId = req.params.id;
+      if (!inquiryId) {
+        throw new AppError('Inquiry ID is required.', 400, 'BAD_REQUEST');
+      }
+
+      const validatedData = sendInquiryMessageSchema.parse(req.body);
+      const result = await inquiriesService.sendMessage(req.user, inquiryId, validatedData);
+
+      return res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Alias for backward compatibility
+  async getCompanyInquiries(req: Request, res: Response, next: NextFunction) {
+    return this.getInquiries(req, res, next);
   }
 }
 

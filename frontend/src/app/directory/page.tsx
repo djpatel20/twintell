@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api-client';
 import { Category } from '../../types';
@@ -19,10 +20,19 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export default function DirectoryPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+function DirectoryContent() {
+  const searchParams = useSearchParams();
+  const urlCategory = searchParams.get('category');
+
+  const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory || 'ALL');
   const [cityInput, setCityInput] = useState<string>('');
   const [activeCity, setActiveCity] = useState<string>('');
+
+  useEffect(() => {
+    if (urlCategory) {
+      setSelectedCategory(urlCategory);
+    }
+  }, [urlCategory]);
 
   // 1. Fetch Categories for filter chips
   const { data: categoriesData } = useQuery({
@@ -225,5 +235,22 @@ export default function DirectoryPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function DirectoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="card-base p-12 flex flex-col items-center justify-center space-y-3">
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-xs text-slate-500">Loading directory...</p>
+          </div>
+        </AppShell>
+      }
+    >
+      <DirectoryContent />
+    </Suspense>
   );
 }

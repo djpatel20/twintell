@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api-client';
@@ -17,6 +17,8 @@ import {
   Sparkles,
   ShieldCheck,
   Check,
+  UploadCloud,
+  Loader2,
 } from 'lucide-react';
 
 export default function OnboardingPage() {
@@ -38,6 +40,52 @@ export default function OnboardingPage() {
   const [description, setDescription] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please select a valid image file (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image file size must be less than 5MB.');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    setErrorMsg(null);
+
+    try {
+      const signRes = await api.post<{ uploadUrl: string; publicUrl: string }>('/api/uploads/sign', {
+        fileName: file.name,
+        fileType: file.type || 'image/jpeg',
+      });
+
+      const uploadRes = await fetch(signRes.uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'image/jpeg',
+        },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Failed to upload "${file.name}" to storage.`);
+      }
+
+      setLogoUrl(signRes.publicUrl);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Failed to upload profile image.');
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   // Fetch categories for company dropdown
   useEffect(() => {
@@ -346,12 +394,77 @@ export default function OnboardingPage() {
                 helperText="Helps buyers find your company via keywords and search filters."
               />
 
-              <Input
-                label="Logo Image URL (Optional)"
-                placeholder="https://..."
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-              />
+              {/* Profile Image / Logo Upload */}
+              <div className="w-full flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Company Profile Image / Logo (Optional)
+                </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleLogoUpload}
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                />
+
+                {logoUrl ? (
+                  <div className="flex items-center gap-4 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <img
+                      src={logoUrl}
+                      alt="Company Logo Preview"
+                      className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0 bg-white"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-800">Logo Uploaded Successfully</p>
+                      <p className="text-[11px] text-slate-500 truncate">{logoUrl}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploadingLogo}
+                          className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline cursor-pointer"
+                        >
+                          Change Photo
+                        </button>
+                        <span className="text-slate-300">•</span>
+                        <button
+                          type="button"
+                          onClick={() => setLogoUrl('')}
+                          className="text-xs font-medium text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => !isUploadingLogo && fileInputRef.current?.click()}
+                    className={`border-2 border-dashed border-slate-200 hover:border-primary-400 rounded-xl p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-slate-50/50 hover:bg-primary-50/20 ${
+                      isUploadingLogo ? 'opacity-60 cursor-not-allowed' : ''
+                    }`}
+                  >
+                    {isUploadingLogo ? (
+                      <div className="flex items-center gap-2 text-primary-600 text-xs font-semibold">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Uploading profile image...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
+                          <UploadCloud className="w-5 h-5" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs font-semibold text-slate-800">
+                            Click to upload Company Logo / Profile Image
+                          </p>
+                          <p className="text-[11px] text-slate-400">PNG, JPG or WEBP (Max 5MB)</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                 <Button

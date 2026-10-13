@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import { AppShell } from '../components/layout/AppShell';
 import { Tabs } from '../components/ui/Tabs';
 import { TopicChip } from '../components/ui/TopicChip';
@@ -20,16 +21,17 @@ import {
   AlertCircle,
   Loader2,
   RefreshCw,
+  MessageSquare,
 } from 'lucide-react';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'for-you' | 'following' | 'trending'>('for-you');
+  const { user, isLoading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
   const [selectedTopic, setSelectedTopic] = useState('ALL');
 
   const feedTabs = [
     { id: 'for-you', label: 'For You' },
     { id: 'following', label: 'Following' },
-    { id: 'trending', label: 'Trending' },
   ];
 
   const topics = [
@@ -92,20 +94,34 @@ export default function HomePage() {
                 The B2B Social Network + Business Directory for verified companies, suppliers, and procurement teams.
               </p>
             </div>
-            <div className="hidden sm:block">
-              <Link href="/login">
-                <Button size="md" className="shadow-md">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
+            {!authLoading && !user ? (
+              <div className="hidden sm:block">
+                <Link href="/login">
+                  <Button size="md" className="shadow-md">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            ) : user ? (
+              <div className="hidden sm:block">
+                <Link href="/profile?tab=inquiries">
+                  <Button
+                    size="md"
+                    className="shadow-md font-bold"
+                    leftIcon={<MessageSquare className="w-4 h-4" />}
+                  >
+                    Open Chats
+                  </Button>
+                </Link>
+              </div>
+            ) : null}
           </div>
         </div>
 
         {/* Create Post Section (for COMPANY role) */}
         <CreatePostBox />
 
-        {/* Feed Header Tabs: For You / Following / Trending */}
+        {/* Feed Header Tabs: For You / Following + Messages Quick Trigger */}
         <div className="bg-white rounded-card p-3 border border-slate-200 shadow-soft flex items-center justify-between gap-2">
           <Tabs
             tabs={feedTabs}
@@ -113,13 +129,25 @@ export default function HomePage() {
             onChange={(tabId) => setActiveTab(tabId as any)}
             variant="pill"
           />
-          <button
-            onClick={() => refetch()}
-            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-            title="Refresh feed"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href={user ? '/profile?tab=inquiries' : '/login'}>
+              <button
+                type="button"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-primary-600 bg-slate-50 hover:bg-primary-50 rounded-lg border border-slate-200 transition-colors"
+                title="Open Messages & Chats"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-primary-500" />
+                <span>Messages</span>
+              </button>
+            </Link>
+            <button
+              onClick={() => refetch()}
+              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+              title="Refresh feed"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Topic Filter Chips Scrollbar */}

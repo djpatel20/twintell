@@ -12,6 +12,7 @@ export const createInquirySchema = z.object({
 
 export const inquiriesQuerySchema = z.object({
   cursor: z.string().optional(),
+  type: z.enum(['all', 'sent', 'received']).optional().default('all'),
   limit: z
     .string()
     .optional()
@@ -19,5 +20,14 @@ export const inquiriesQuerySchema = z.object({
     .pipe(z.number().min(1).max(50)),
 });
 
+export const sendInquiryMessageSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, 'Message cannot be empty.')
+    .max(2000, 'Message must not exceed 2000 characters.'),
+});
+
 export type CreateInquiryInput = z.infer<typeof createInquirySchema>;
 export type InquiriesQueryInput = z.infer<typeof inquiriesQuerySchema>;
+export type SendInquiryMessageInput = z.infer<typeof sendInquiryMessageSchema>;

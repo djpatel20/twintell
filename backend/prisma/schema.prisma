@@ -54,6 +54,7 @@ model User {
   comments  Comment[]
   follows   Follow[]
   inquiries Inquiry[]
+  inquiryMessages InquiryMessage[]
   notificationsReceived Notification[] @relation("UserNotifications")
   notificationsSent     Notification[] @relation("ActorNotifications")
 }
@@ -189,13 +190,30 @@ model Inquiry {
   companyId String   @db.Uuid
   productId String?  @db.Uuid
   message   String
+  status    String   @default("OPEN")
   createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company  Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product  Product?         @relation(fields: [productId], references: [id], onDelete: SetNull)
+  messages InquiryMessage[]
 
   @@index([companyId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model InquiryMessage {
+  id        String   @id @default(uuid()) @db.Uuid
+  inquiryId String   @db.Uuid
+  senderId  String   @db.Uuid
+  content   String
+  createdAt DateTime @default(now())
+
+  inquiry Inquiry @relation(fields: [inquiryId], references: [id], onDelete: Cascade)
+  sender  User    @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([inquiryId, createdAt(sort: Asc)])
 }
 
 // ---------- Subscriptions (future phase — tables ready, limits from DB) ----------

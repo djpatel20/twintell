@@ -115,3 +115,17 @@ export function emitNotificationToUser(userId: string, notification: any): void 
   io.to(room).emit('notification:new', notification);
   logger.info({ userId, room, notificationId: notification.id, type: notification.type }, 'Dispatched real-time notification via Socket.io');
 }
+
+/**
+ * Emits a real-time inquiry chat message to a specific user's socket room.
+ */
+export function emitInquiryMessageToUser(userId: string, data: any): void {
+  if (!io) {
+    logger.warn({ userId }, 'Socket.io not initialized; skipped real-time inquiry message emit');
+    return;
+  }
+
+  const room = `user:${userId}`;
+  io.to(room).emit('inquiry:message', data);
+  logger.info({ userId, room, inquiryId: data?.inquiryId }, 'Dispatched real-time inquiry chat message via Socket.io');
+}
