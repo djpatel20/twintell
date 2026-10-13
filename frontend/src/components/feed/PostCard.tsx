@@ -20,6 +20,8 @@ interface PostCardProps {
 function formatRelativeTime(dateString: string): string {
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Recently';
+
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -30,7 +32,12 @@ function formatRelativeTime(dateString: string): string {
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 30) return `${diffInDays}d ago`;
-    return date.toLocaleDateString();
+
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    });
   } catch {
     return 'Recently';
   }
@@ -130,7 +137,15 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
                 {post.company.name}
               </Link>
               {post.company.verified && <VerifiedBadge showLabel={false} />}
-              <span className="text-xs text-slate-400">• {formatRelativeTime(post.createdAt)}</span>
+              <span
+                className="text-xs text-slate-400 cursor-default"
+                title={new Date(post.createdAt).toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              >
+                • {formatRelativeTime(post.createdAt)}
+              </span>
             </div>
             <p className="text-xs text-slate-500 truncate">
               {post.company.businessType} • {post.company.city}

@@ -24,6 +24,8 @@ import {
 function formatCommentDate(dateString: string): string {
   try {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Recently';
+
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -34,7 +36,12 @@ function formatCommentDate(dateString: string): string {
     if (diffInHours < 24) return `${diffInHours}h ago`;
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 30) return `${diffInDays}d ago`;
-    return date.toLocaleDateString();
+
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+    });
   } catch {
     return 'Recently';
   }
@@ -225,7 +232,15 @@ export default function PostDetailPage() {
                               COMPANY
                             </span>
                           )}
-                          <span className="text-[11px] text-slate-400">• {formatCommentDate(comment.createdAt)}</span>
+                          <span
+                            className="text-[11px] text-slate-400 cursor-default"
+                            title={new Date(comment.createdAt).toLocaleString(undefined, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          >
+                            • {formatCommentDate(comment.createdAt)}
+                          </span>
                         </div>
                         <p className="text-slate-700 leading-relaxed whitespace-pre-line">{comment.content}</p>
                       </div>
