@@ -288,9 +288,18 @@ export function CreatePostBox() {
 
           {/* Error Banner */}
           {errorMsg && (
-            <div className="flex items-center gap-2 p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-              <span>{errorMsg}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl">
+              <div className="flex items-center gap-2 min-w-0">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span className="leading-relaxed">{errorMsg}</span>
+              </div>
+              {errorMsg.toLowerCase().includes('limit') && (
+                <Link href="/pricing" className="shrink-0 self-end sm:self-center">
+                  <Button size="sm" className="text-xs font-bold shadow-xs py-1.5 px-3">
+                    Upgrade to Business Pro
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
 

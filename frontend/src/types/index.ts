@@ -204,3 +204,48 @@ export interface Notification {
   } | null;
 }
 
+export interface Plan {
+  id: string;
+  code: 'FREE' | 'PRO' | 'ADVERTISING' | 'LEAD_GEN' | string;
+  name: string;
+  tagline?: string | null;
+  priceYearly: number;
+  priceMonthly: number;
+  postsPerMonth: number | null;
+  productsLimit: number | null;
+  features: string[];
+  badge?: string | null;
+  isPopular: boolean;
+  isActive: boolean;
+}
+
+export interface Subscription {
+  id: string;
+  companyId: string;
+  planId: string;
+  status: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'EXPIRED';
+  currentPeriodStart: string;
+  currentPeriodEnd?: string | null;
+  plan?: Plan;
+}
+
+export interface SubscriptionDetailsResponse {
+  subscription: {
+    id: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string | null;
+  };
+  plan: Plan;
+  usage: {
+    postsUsed: number;
+    postsLimit: number | null;
+    productsUsed: number;
+    productsLimit: number | null;
+    canPost: boolean;
+    canListProduct: boolean;
+    canReceiveInquiries: boolean;
+  };
+}
+
+

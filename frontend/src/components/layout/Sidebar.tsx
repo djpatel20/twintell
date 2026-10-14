@@ -12,6 +12,7 @@ import {
   User as UserIcon,
   Plus,
   LogIn,
+  Zap,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { Avatar } from "../ui/Avatar";
@@ -58,6 +59,12 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
             ? "99+"
             : String(unreadCount)
           : undefined,
+    },
+    {
+      label: "Plans & Pricing",
+      href: "/pricing",
+      icon: Zap,
+      isActive: pathname === "/pricing",
     },
     {
       label: "Profile",

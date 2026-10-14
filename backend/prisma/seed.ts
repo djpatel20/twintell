@@ -33,30 +33,83 @@ async function main() {
   }
   console.log('✅ Categories seeded');
 
-  // 2. Seed Plans
+  // 2. Seed Official Twintell Plans
   const plansData = [
     {
       code: 'FREE',
-      name: 'Free Plan',
+      name: 'Starter',
+      tagline: 'Free Business Listing',
+      priceYearly: 0,
       priceMonthly: 0,
-      postsPerMonth: null, // null = unlimited for Phase 1
+      postsPerMonth: 3,
       productsLimit: null,
+      features: [
+        'Create a company profile',
+        'List your products',
+        'List your business in relevant categories',
+        'Publish 3 business posts',
+        'Connect with other businesses',
+      ],
+      badge: null,
+      isPopular: false,
       isActive: true,
     },
     {
       code: 'PRO',
-      name: 'Pro Business',
-      priceMonthly: 999,
-      postsPerMonth: 100,
-      productsLimit: 50,
+      name: 'Business Pro',
+      tagline: 'Enhanced Business Presence',
+      priceYearly: 1999,
+      priceMonthly: 166.58,
+      postsPerMonth: 10,
+      productsLimit: null,
+      features: [
+        'Everything in the Free plan',
+        'Enhanced company profile',
+        'Expanded product catalogue',
+        'Publish up to 10 business posts',
+        'Business contact and enquiry tools',
+        'Business performance analytics',
+      ],
+      badge: 'Recommended',
+      isPopular: true,
       isActive: true,
     },
     {
-      code: 'ENTERPRISE',
-      name: 'Enterprise Scale',
-      priceMonthly: 4999,
-      postsPerMonth: null,
+      code: 'ADVERTISING',
+      name: 'Advertising Plan',
+      tagline: 'Promote Your Business on Twintell',
+      priceYearly: 1999,
+      priceMonthly: 166.58,
+      postsPerMonth: 10,
       productsLimit: null,
+      features: [
+        '12 planned promotional placements',
+        'One promotional campaign per month',
+        'Promote products, services or company news',
+        'In-feed promotional slots between feed posts',
+        'View campaign performance statistics',
+      ],
+      badge: 'Growth',
+      isPopular: false,
+      isActive: true,
+    },
+    {
+      code: 'LEAD_GEN',
+      name: 'Lead Generation',
+      tagline: 'Connect With Potential Buyers',
+      priceYearly: 0,
+      priceMonthly: 0,
+      postsPerMonth: 25,
+      productsLimit: null,
+      features: [
+        'Match buyer enquiries with relevant suppliers',
+        'Pre-screened verified buyer RFQs',
+        'Free pilot for enrolled manufacturers',
+        'Direct procurement buyer introductions',
+        'Dedicated supplier onboarding manager',
+      ],
+      badge: 'High Intent',
+      isPopular: false,
       isActive: true,
     },
   ];
@@ -67,16 +120,26 @@ async function main() {
       where: { code: plan.code },
       update: {
         name: plan.name,
+        tagline: plan.tagline,
+        priceYearly: plan.priceYearly,
         priceMonthly: plan.priceMonthly,
         postsPerMonth: plan.postsPerMonth,
         productsLimit: plan.productsLimit,
+        features: plan.features,
+        badge: plan.badge,
+        isPopular: plan.isPopular,
         isActive: plan.isActive,
       },
       create: plan,
     });
     plans[plan.code] = upserted.id;
   }
-  console.log('✅ Plans seeded');
+  // Ensure legacy plans are inactive
+  await prisma.plan.updateMany({
+    where: { code: { notIn: plansData.map((p) => p.code) } },
+    data: { isActive: false },
+  });
+  console.log('✅ Official plans seeded');
 
   // 3. Seed Users & Companies (Matching mockups)
   const sampleUsers = [
