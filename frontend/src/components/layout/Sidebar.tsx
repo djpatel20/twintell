@@ -75,17 +75,10 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
   ];
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 border-r border-slate-200 bg-white p-5 justify-between select-none">
-      <div className="space-y-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 px-2">
-          <span className="text-2xl font-black tracking-tight text-primary-500">
-            Twintell
-          </span>
-        </Link>
-
+    <aside className="hidden lg:flex flex-col w-64 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] border-r border-slate-200 bg-white p-4 justify-between select-none overflow-y-auto">
+      <div className="space-y-4">
         {/* Navigation list */}
-        <nav className="space-y-1.5">
+        <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.isActive;

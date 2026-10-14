@@ -86,7 +86,7 @@ function DirectoryContent() {
   };
 
   return (
-    <AppShell>
+    <AppShell contentMaxWidth="wide">
       <div className="space-y-6">
         {/* Header Hero Banner */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-card p-6 sm:p-8 text-white shadow-soft">
@@ -242,7 +242,7 @@ export default function DirectoryPage() {
   return (
     <Suspense
       fallback={
-        <AppShell>
+        <AppShell contentMaxWidth="wide">
           <div className="card-base p-12 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
             <p className="text-xs text-slate-500">Loading directory...</p>

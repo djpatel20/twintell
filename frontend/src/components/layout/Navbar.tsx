@@ -19,17 +19,17 @@ export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
   return (
     <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        {/* Mobile brand logo */}
-        <div className="flex items-center gap-2 lg:hidden">
-          <Link href="/" className="flex items-center gap-1.5">
-            <span className="text-xl font-bold tracking-tight text-primary-500">
+        {/* Brand logo - visible on mobile and desktop, aligned with left sidebar */}
+        <div className="flex items-center gap-2 lg:w-56 shrink-0">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-xl sm:text-2xl font-black tracking-tight text-primary-600">
               Twintell
             </span>
           </Link>
         </div>
 
-        {/* Global Search Bar (Mobile & Desktop) */}
-        <div className="flex-1 max-w-md">
+        {/* Global Search Bar (Centered on Desktop) */}
+        <div className="flex-1 max-w-lg mx-auto">
           <form
             onSubmit={(e) => {
               e.preventDefault();

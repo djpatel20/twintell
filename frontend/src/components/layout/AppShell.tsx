@@ -14,6 +14,7 @@ interface AppShellProps {
   user?: User | null;
   onNewPostClick?: () => void;
   showRightSidebar?: boolean;
+  contentMaxWidth?: 'feed' | 'wide' | 'full';
 }
 
 export function AppShell({
@@ -22,6 +23,7 @@ export function AppShell({
   user: propUser,
   onNewPostClick,
   showRightSidebar = true,
+  contentMaxWidth = 'feed',
 }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -38,6 +40,13 @@ export function AppShell({
 
   const handleNewPost = onNewPostClick || (() => router.push('/posts/new'));
 
+  const maxWidthClass =
+    contentMaxWidth === 'wide'
+      ? 'w-full max-w-6xl'
+      : contentMaxWidth === 'full'
+      ? 'w-full'
+      : 'w-full max-w-feed';
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top Navbar */}
@@ -47,13 +56,13 @@ export function AppShell({
         {/* Desktop Left Sidebar */}
         <Sidebar user={currentUser} isLoading={isLoading} onNewPostClick={handleNewPost} />
 
-        {/* Center Main Content Area (Max feed ~680px on desktop) */}
+        {/* Center Main Content Area */}
         <main className="flex-1 min-w-0 flex justify-center px-2 sm:px-4 py-4 sm:py-6 pb-20 lg:pb-8">
-          <div className="w-full max-w-feed">{children}</div>
+          <div className={maxWidthClass}>{children}</div>
         </main>
 
-        {/* Desktop Right Sidebar (Trending companies / widgets) */}
-        {showRightSidebar && (
+        {/* Desktop Right Sidebar (Rendered ONLY when rightSidebar content is provided) */}
+        {showRightSidebar && rightSidebar && (
           <aside className="hidden xl:block w-80 shrink-0 p-6 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto">
             {rightSidebar}
           </aside>

@@ -398,7 +398,7 @@ function SearchContent() {
 
 export default function SearchPage() {
   return (
-    <AppShell>
+    <AppShell contentMaxWidth="wide">
       <Suspense
         fallback={
           <div className="card-base p-12 flex flex-col items-center justify-center space-y-3">

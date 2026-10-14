@@ -147,7 +147,7 @@ function ProfileContent() {
 
   if (authLoading || !user) {
     return (
-      <AppShell>
+      <AppShell contentMaxWidth="wide">
         <div className="card-base p-12 flex flex-col items-center justify-center space-y-3">
           <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
           <p className="text-sm font-semibold text-slate-600">Loading your profile...</p>
@@ -157,7 +157,7 @@ function ProfileContent() {
   }
 
   return (
-    <AppShell>
+    <AppShell contentMaxWidth="wide">
       <div className="space-y-6">
         {/* User Profile Header Card */}
         <div className="card-base p-6 relative overflow-hidden">
@@ -266,18 +266,18 @@ function ProfileContent() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                <Link href={`/companies/${company.slug}`} className="flex-1 sm:flex-none">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+                <Link href={`/companies/${company.slug}`} className="w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full text-xs"
+                    className="w-full text-xs font-semibold"
                     leftIcon={<ExternalLink className="w-3.5 h-3.5" />}
                   >
-                    View Public Page
+                    View Public
                   </Button>
                 </Link>
-                <Link href="/pricing" className="flex-1 sm:flex-none">
+                <Link href="/pricing" className="w-full sm:w-auto">
                   <Button
                     size="sm"
                     variant={subDetails?.plan?.code === 'PRO' ? 'outline' : 'primary'}
@@ -290,7 +290,7 @@ function ProfileContent() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 sm:flex-none text-xs"
+                  className="w-full sm:w-auto text-xs font-semibold"
                   leftIcon={<Plus className="w-3.5 h-3.5" />}
                   onClick={() => setIsAddProductOpen(true)}
                 >
@@ -299,7 +299,7 @@ function ProfileContent() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 sm:flex-none text-xs"
+                  className="w-full sm:w-auto text-xs font-semibold"
                   leftIcon={<Edit3 className="w-3.5 h-3.5" />}
                   onClick={() => setIsEditCompanyOpen(true)}
                 >
@@ -311,7 +311,7 @@ function ProfileContent() {
         )}
 
         {/* Navigation Tabs for Company / User Content */}
-        <div className="flex items-center gap-2 border-b border-slate-200">
+        <div className="flex items-center gap-1 sm:gap-2 border-b border-slate-200 overflow-x-auto no-scrollbar whitespace-nowrap">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
@@ -872,7 +872,7 @@ export default function ProfilePage() {
   return (
     <Suspense
       fallback={
-        <AppShell>
+        <AppShell contentMaxWidth="wide">
           <div className="card-base p-12 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
             <p className="text-xs text-slate-500">Loading profile...</p>

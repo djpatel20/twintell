@@ -122,7 +122,7 @@ export default function DiscoverPage() {
   };
 
   return (
-    <AppShell>
+    <AppShell contentMaxWidth="wide">
       <div className="space-y-8">
         {/* Discover Hero Banner */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-900 text-white p-6 sm:p-8 shadow-md">

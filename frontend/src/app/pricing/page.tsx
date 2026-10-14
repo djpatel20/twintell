@@ -109,7 +109,7 @@ export default function PricingPage() {
   };
 
   return (
-    <AppShell>
+    <AppShell contentMaxWidth="wide" showRightSidebar={false}>
       <div className="space-y-10 max-w-6xl mx-auto py-2">
         {/* Hero Section */}
         <div className="text-center space-y-4 max-w-2xl mx-auto">
@@ -173,7 +173,7 @@ export default function PricingPage() {
               return (
                 <div
                   key={plan.id}
-                  className={`card-base p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 relative ${
+                  className={`card-base p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 relative h-full ${
                     isRecommended
                       ? 'border-2 border-primary-500 shadow-md ring-4 ring-primary-500/10'
                       : isCurrent
@@ -184,7 +184,7 @@ export default function PricingPage() {
                   {/* Badge */}
                   {plan.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-primary-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                      <span className="bg-primary-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm whitespace-nowrap">
                         {plan.badge}
                       </span>
                     </div>
@@ -192,24 +192,24 @@ export default function PricingPage() {
 
                   {isCurrent && !plan.badge && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="bg-emerald-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                      <span className="bg-emerald-600 text-white text-[11px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm whitespace-nowrap">
                         Current Plan
                       </span>
                     </div>
                   )}
 
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex-1 flex flex-col">
                     {/* Top Header */}
                     <div className="space-y-1.5 pt-1">
                       <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-2">
                         <Icon className="w-5 h-5" />
                       </div>
                       <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-                      <p className="text-xs text-slate-500 min-h-[32px]">{plan.tagline}</p>
+                      <p className="text-xs text-slate-500 min-h-[36px] line-clamp-2">{plan.tagline}</p>
                     </div>
 
-                    {/* Price Header */}
-                    <div className="py-2 border-y border-slate-100">
+                    {/* Price Header (Aligned vertical baseline across all cards) */}
+                    <div className="py-2.5 border-y border-slate-100 min-h-[72px] flex flex-col justify-center">
                       {plan.code === 'LEAD_GEN' ? (
                         <div className="space-y-0.5">
                           <span className="text-lg font-black text-slate-900">Contact Sales</span>
@@ -238,7 +238,7 @@ export default function PricingPage() {
                     </div>
 
                     {/* Features List */}
-                    <div className="space-y-2.5 pt-1">
+                    <div className="space-y-2.5 pt-1 flex-1">
                       <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                         What's Included:
                       </p>
