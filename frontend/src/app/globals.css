@@ -1,44 +1,94 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #F8FAFC;
-  --surface: #FFFFFF;
-  --primary: #1A5CFF;
-  --primary-hover: #0047E0;
+  /* Design Tokens from DESIGN.md §3 */
+  --ink: #14213D;
+  --ink-muted: #5A6478;
+  --ink-faint: #8B93A5;
+  --surface: #F4F5F7;
+  --panel: #FFFFFF;
+  --panel-sunk: #EEF0F4;
+  --line: #E2E5EB;
+  --cobalt: #2B44D6;
+  --cobalt-soft: #ECEFFD;
+  --amber: #E59A1F;
+  --amber-soft: #FDF3E1;
+  --green: #1E9466;
+  --red: #D23F3F;
+
+  /* Category colors (§3) */
+  --cat-mfg: #4C5BD4;
+  --cat-news: #5A6478;
+  --cat-products: #1E9466;
+  --cat-wholesale: #C27A12;
+  --cat-d2c: #C2417A;
+  --cat-tech: #2B8FB8;
+
+  /* Compatibility bindings */
+  --background: var(--surface);
+  --primary: var(--cobalt);
+}
+
+.dark,
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #E8ECF5;
+    --ink-muted: #9AA3B5;
+    --ink-faint: #6B7487;
+    --surface: #0F1626;
+    --panel: #172033;
+    --panel-sunk: #1D2840;
+    --line: #26324A;
+    --cobalt: #6C82FF;
+    --cobalt-soft: #1E2A55;
+    --amber: #F2B24C;
+    --amber-soft: #3A2C12;
+    --green: #3DC48E;
+    --red: #F06A6A;
+
+    --background: var(--surface);
+    --primary: var(--cobalt);
+  }
 }
 
 body {
-  background-color: var(--background);
-  color: #0F172A;
-  font-family: 'Inter', sans-serif;
+  background-color: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom subtle scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* Card utility */
+/* Card utility adhering to DESIGN.md §5 */
 .card-base {
-  background: #FFFFFF;
-  border-radius: 14px;
-  border: 1px solid #E2E8F0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  background-color: var(--panel);
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+/* Elevation for floating elements only (§5) */
+.elevation-floating {
+  box-shadow: 0 8px 24px -8px rgb(20 33 61 / 0.18), 0 2px 6px -2px rgb(20 33 61 / 0.08);
+}
+
+/* Tabular nums */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible focus ring per DESIGN.md §10 */
+:focus-visible {
+  outline: 2px solid var(--cobalt);
+  outline-offset: 2px;
 }

@@ -31,6 +31,7 @@ export const onboardingSchema = z.discriminatedUnion('role', [
         .min(1800)
         .max(new Date().getFullYear())
         .optional(),
+      gstin: z.string().max(20).optional(),
     }),
   }),
 ]);

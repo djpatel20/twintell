@@ -82,6 +82,7 @@ model Company {
   description   String?
   tags          String[] // ["Packaging", "Custom Boxes", "Eco Friendly"]
   yearFounded   Int?
+  gstin         String?  // 15-character GST identification number for auto-verification
   verified      Boolean  @default(false)
   followerCount Int      @default(0)
   createdAt     DateTime @default(now())

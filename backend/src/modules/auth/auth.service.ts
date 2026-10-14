@@ -68,6 +68,7 @@ export class AuthService {
               description: user.company.description,
               tags: user.company.tags,
               yearFounded: user.company.yearFounded,
+              gstin: (user.company as any).gstin || null,
               verified: user.company.verified,
               followerCount: user.company.followerCount,
               subscription: user.company.subscription
@@ -197,9 +198,10 @@ export class AuthService {
             coverUrl: companyData.coverUrl || null,
             tags: companyData.tags || [],
             yearFounded: companyData.yearFounded || null,
-            verified: false,
+            gstin: companyData.gstin?.trim() || null,
+            verified: Boolean(companyData.gstin && companyData.gstin.trim().length >= 15),
             followerCount: 0,
-          },
+          } as any,
         });
 
         // 3. Create active subscription with FREE plan

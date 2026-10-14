@@ -39,6 +39,7 @@ export default function OnboardingPage() {
   const [state, setState] = useState('');
   const [description, setDescription] = useState('');
   const [tagsInput, setTagsInput] = useState('');
+  const [gstin, setGstin] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -149,6 +150,7 @@ export default function OnboardingPage() {
           description: description || undefined,
           logoUrl: logoUrl || undefined,
           tags,
+          gstin: gstin.trim() || undefined,
         },
       });
 
@@ -383,6 +385,31 @@ export default function OnboardingPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe your manufacturing capabilities, specializations, and products..."
                   className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                />
+              </div>
+
+              {/* GSTIN Field for Automatic Verification */}
+              <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>GSTIN (GST Identification Number)</span>
+                  </label>
+                  {gstin.trim().length >= 15 ? (
+                    <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      Eligible for Verified Badge
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-slate-400">Optional</span>
+                  )}
+                </div>
+                <Input
+                  placeholder="e.g. 24AAACG1234A1Z5 (15 characters)"
+                  value={gstin}
+                  onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                  maxLength={15}
+                  helperText="Providing a valid 15-digit GSTIN automatically marks your company profile as Verified with the green check trust badge."
                 />
               </div>
 

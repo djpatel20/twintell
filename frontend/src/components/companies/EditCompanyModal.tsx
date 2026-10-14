@@ -22,6 +22,7 @@ interface EditCompanyModalProps {
     description?: string | null;
     tags?: string[];
     yearFounded?: number | null;
+    gstin?: string | null;
     logoUrl?: string | null;
     coverUrl?: string | null;
   };
@@ -40,6 +41,7 @@ export function EditCompanyModal({
   const [categoryId, setCategoryId] = useState<string>(initialData.categoryId || '');
   const [city, setCity] = useState(initialData.city || '');
   const [state, setState] = useState(initialData.state || '');
+  const [gstin, setGstin] = useState(initialData.gstin || '');
   const [description, setDescription] = useState(initialData.description || '');
   const [tagsInput, setTagsInput] = useState((initialData.tags || []).join(', '));
   const [yearFounded, setYearFounded] = useState<string>(
@@ -92,6 +94,7 @@ export function EditCompanyModal({
         description: description.trim() || null,
         tags: parsedTags,
         yearFounded: parsedYear,
+        gstin: gstin.trim() || null,
         logoUrl: logoUrl.trim() || null,
         coverUrl: coverUrl.trim() || null,
       });
@@ -201,6 +204,28 @@ export function EditCompanyModal({
             onChange={(e) => setYearFounded(e.target.value)}
             placeholder="e.g. 2012"
           />
+
+          <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800">
+                GSTIN (GST Identification Number)
+              </label>
+              {gstin.trim().length >= 15 ? (
+                <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                  ✓ Verified Badge Active
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-400">15 characters</span>
+              )}
+            </div>
+            <Input
+              placeholder="e.g. 24AAACG1234A1Z5"
+              value={gstin}
+              onChange={(e) => setGstin(e.target.value.toUpperCase())}
+              maxLength={15}
+              helperText="Adding a valid 15-digit GSTIN automatically grants the Verified trust mark on your company profile."
+            />
+          </div>
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">

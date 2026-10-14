@@ -2,48 +2,44 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { AppShell } from '../components/layout/AppShell';
-import { Tabs } from '../components/ui/Tabs';
+import { SegmentedControl } from '../components/ui/SegmentedControl';
 import { TopicChip } from '../components/ui/TopicChip';
 import { Button } from '../components/ui/Button';
-import { Avatar } from '../components/ui/Avatar';
-import { VerifiedBadge } from '../components/ui/Badge';
 import { PostCardSkeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { PostCard } from '../components/feed/PostCard';
 import { CreatePostBox } from '../components/feed/CreatePostBox';
+import { PersonalWelcomeStrip } from '../components/feed/PersonalWelcomeStrip';
+import { NewPostsPill } from '../components/feed/NewPostsPill';
+import { RightRail } from '../components/feed/RightRail';
 import { api } from '../lib/api-client';
-import { Post, Company } from '../types';
-import {
-  Sparkles,
-  AlertCircle,
-  Loader2,
-  RefreshCw,
-  MessageSquare,
-} from 'lucide-react';
+import { Post } from '../types';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+
+const TOPICS = [
+  { id: 'ALL', label: 'All' },
+  { id: 'MANUFACTURING', label: 'Manufacturing' },
+  { id: 'BUSINESS_NEWS', label: 'Business News' },
+  { id: 'PRODUCTS', label: 'Products' },
+  { id: 'WHOLESALE', label: 'Wholesale' },
+  { id: 'D2C_BRANDS', label: 'D2C / Brands' },
+  { id: 'TECHNOLOGY', label: 'Technology' },
+  { id: 'AGRICULTURE', label: 'Agriculture' },
+];
+
+const FEED_TABS = [
+  { id: 'for-you', label: 'For You' },
+  { id: 'following', label: 'Following' },
+];
 
 export default function HomePage() {
   const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
   const [selectedTopic, setSelectedTopic] = useState('ALL');
-
-  const feedTabs = [
-    { id: 'for-you', label: 'For You' },
-    { id: 'following', label: 'Following' },
-  ];
-
-  const topics = [
-    { id: 'ALL', label: 'All' },
-    { id: 'MANUFACTURING', label: 'Manufacturing' },
-    { id: 'BUSINESS_NEWS', label: 'Business News' },
-    { id: 'PRODUCTS', label: 'Products' },
-    { id: 'WHOLESALE', label: 'Wholesale' },
-    { id: 'D2C_BRANDS', label: 'D2C / Brands' },
-    { id: 'TECHNOLOGY', label: 'Technology' },
-    { id: 'AGRICULTURE', label: 'Agriculture' },
-  ];
+  const [showNewPill, setShowNewPill] = useState(false);
 
   // Fetch Infinite Feed from Backend API
   const {
@@ -55,6 +51,7 @@ export default function HomePage() {
     fetchNextPage,
     isFetchingNextPage,
     refetch,
+    isRefetching,
   } = useInfiniteQuery({
     queryKey: ['feed', activeTab, selectedTopic],
     queryFn: async ({ pageParam }) => {
@@ -76,119 +73,103 @@ export default function HomePage() {
 
   const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
 
-  return (
-    <AppShell showRightSidebar={false}>
-      <div className="space-y-4">
-        {/* Welcome Banner Card */}
-        <div className="bg-gradient-to-r from-primary-50 via-white to-primary-50 rounded-card p-5 border border-primary-100 shadow-soft">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-1.5 text-primary-600 text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>twintell Platform • Realtime Feed</span>
-              </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                Connect. Discover. Grow.
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-600 max-w-md">
-                The B2B Social Network + Business Directory for verified companies, suppliers, and procurement teams.
-              </p>
-            </div>
-            {!authLoading && !user ? (
-              <div className="hidden sm:block">
-                <Link href="/login">
-                  <Button size="md" className="shadow-md">
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            ) : user ? (
-              <div className="hidden sm:block">
-                <Link href="/profile?tab=inquiries">
-                  <Button
-                    size="md"
-                    className="shadow-md font-bold"
-                    leftIcon={<MessageSquare className="w-4 h-4" />}
-                  >
-                    Open Chats
-                  </Button>
-                </Link>
-              </div>
-            ) : null}
-          </div>
-        </div>
+  const handleRefreshFeed = async () => {
+    setShowNewPill(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    await refetch();
+  };
 
-        {/* Create Post Section (for COMPANY role) */}
+  const selectedTopicObj = TOPICS.find((t) => t.id === selectedTopic);
+
+  return (
+    <AppShell showRightSidebar={true} rightSidebar={<RightRail />}>
+      <div className="space-y-3">
+        {/* New posts pill sliding down when active per DESIGN.md §7 & §9 */}
+        <NewPostsPill
+          visible={showNewPill}
+          onClick={handleRefreshFeed}
+        />
+
+        {/* 1. Compact Personal Welcome Strip per DESIGN.md §6 */}
+        <PersonalWelcomeStrip user={user} isLoading={authLoading} />
+
+        {/* 2. Composer (for COMPANY users) */}
         <CreatePostBox />
 
-        {/* Feed Header Tabs: For You / Following + Messages Quick Trigger */}
-        <div className="bg-white rounded-card p-3 border border-slate-200 shadow-soft flex items-center justify-between gap-2">
-          <Tabs
-            tabs={feedTabs}
-            activeTab={activeTab}
+        {/* 3. Feed Control Bar: Segmented Tabs & Refresh */}
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <SegmentedControl
+            options={FEED_TABS}
+            value={activeTab}
             onChange={(tabId) => setActiveTab(tabId as any)}
-            variant="pill"
+            size="md"
           />
-          <div className="flex items-center gap-2">
-            <Link href={user ? '/profile?tab=inquiries' : '/login'}>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-primary-600 bg-slate-50 hover:bg-primary-50 rounded-lg border border-slate-200 transition-colors"
-                title="Open Messages & Chats"
-              >
-                <MessageSquare className="w-3.5 h-3.5 text-primary-500" />
-                <span>Messages</span>
-              </button>
-            </Link>
-            <button
-              onClick={() => refetch()}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
-              title="Refresh feed"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+
+          <button
+            type="button"
+            onClick={handleRefreshFeed}
+            disabled={isRefetching}
+            className="w-9 h-9 flex items-center justify-center text-ink-muted hover:text-ink hover:bg-panel-sunk rounded-lg transition-colors border border-line"
+            title="Refresh feed"
+            aria-label="Refresh feed"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin text-cobalt' : ''}`} />
+          </button>
+        </div>
+
+        {/* 4. Category Filter Chips with Edge Fade Masks & Hidden Scrollbars per DESIGN.md §7 */}
+        <div className="relative w-full">
+          {/* Left edge fade mask */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-surface to-transparent z-10" />
+
+          {/* Chips container */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-1">
+            {TOPICS.map((topic) => (
+              <TopicChip
+                key={topic.id}
+                topicId={topic.id}
+                label={topic.label}
+                isSelected={selectedTopic === topic.id}
+                onClick={() => setSelectedTopic(topic.id)}
+              />
+            ))}
           </div>
+
+          {/* Right edge fade mask */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-surface to-transparent z-10" />
         </div>
 
-        {/* Topic Filter Chips Scrollbar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {topics.map((topic) => (
-            <TopicChip
-              key={topic.id}
-              label={topic.label}
-              isSelected={selectedTopic === topic.id}
-              onClick={() => setSelectedTopic(topic.id)}
-            />
-          ))}
-        </div>
-
-        {/* Feed Content Area */}
+        {/* 5. Feed Content Area */}
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="space-y-3 pt-1">
             <PostCardSkeleton />
             <PostCardSkeleton />
             <PostCardSkeleton />
           </div>
         ) : isError ? (
-          <div className="bg-rose-50 border border-rose-200 rounded-card p-6 text-center space-y-3">
-            <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
-            <h3 className="text-sm font-bold text-rose-900">Failed to load feed</h3>
-            <p className="text-xs text-rose-600">
-              {(error as Error)?.message || 'Unable to connect to the backend server. Please make sure the backend is running.'}
+          <div className="card-base p-6 bg-panel border-line text-center space-y-3">
+            <AlertCircle className="w-8 h-8 text-red mx-auto" />
+            <h3 className="text-sm font-semibold text-ink">Couldn&apos;t load the feed</h3>
+            <p className="text-xs text-ink-muted max-w-sm mx-auto">
+              Check your connection and retry. If the problem persists, our trade floor servers may be updating.
             </p>
             <Button size="sm" variant="secondary" onClick={() => refetch()}>
-              Try Again
+              Try again
             </Button>
           </div>
         ) : allPosts.length === 0 ? (
           <EmptyState
-            title="No posts found"
+            title={
+              activeTab === 'following'
+                ? 'No updates from companies you follow yet'
+                : `No posts in ${selectedTopicObj?.label || 'this category'} yet`
+            }
             description={
               activeTab === 'following'
-                ? "You haven't followed any companies yet. Explore the directory or follow trending companies to see their updates here!"
-                : `There are currently no updates in the "${topics.find((t) => t.id === selectedTopic)?.label}" category.`
+                ? 'Follow verified manufacturers and suppliers in the directory to see their product updates and announcements here.'
+                : 'Follow verified companies in the directory to fill this feed, or be the first to post an update.'
             }
-            actionLabel={selectedTopic !== 'ALL' ? 'Show All Posts' : 'Explore Directory'}
+            actionLabel={selectedTopic !== 'ALL' ? 'Show all categories' : 'Explore directory'}
             onAction={() => {
               if (selectedTopic !== 'ALL') {
                 setSelectedTopic('ALL');
@@ -198,7 +179,7 @@ export default function HomePage() {
             }}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 pt-1">
             {allPosts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
@@ -210,17 +191,10 @@ export default function HomePage() {
                   variant="secondary"
                   size="md"
                   onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
+                  isLoading={isFetchingNextPage}
                   className="w-full sm:w-auto px-6"
                 >
-                  {isFetchingNextPage ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Loading more updates...
-                    </>
-                  ) : (
-                    'Load More Updates'
-                  )}
+                  Load more updates
                 </Button>
               </div>
             )}

@@ -1,11 +1,11 @@
 import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Check, Star } from 'lucide-react';
 
 export interface BadgeProps {
   children?: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'verified' | 'success' | 'outline' | 'gray';
+  variant?: 'verified' | 'gold' | 'new' | 'count' | 'neutral' | 'primary' | 'secondary' | 'gray';
   size?: 'sm' | 'md';
   icon?: React.ReactNode;
   className?: string;
@@ -13,25 +13,28 @@ export interface BadgeProps {
 
 export function Badge({
   children,
-  variant = 'gray',
+  variant = 'neutral',
   size = 'sm',
   icon,
   className,
 }: BadgeProps) {
-  const baseStyles = 'inline-flex items-center font-medium rounded-full';
+  // Radius: 999px per DESIGN.md §5, text-xs font-medium per §4
+  const baseStyles = 'inline-flex items-center font-medium rounded-full select-none';
 
   const sizes = {
-    sm: 'text-[11px] px-2.5 py-0.5 gap-1',
-    md: 'text-xs px-3 py-1 gap-1.5',
+    sm: 'text-xs px-2 py-0.5 gap-1',
+    md: 'text-xs px-2.5 py-1 gap-1.5',
   };
 
   const variants = {
-    primary: 'bg-primary-50 text-primary-600 border border-primary-100',
-    secondary: 'bg-indigo-50 text-indigo-600 border border-indigo-100',
-    verified: 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold',
-    success: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-    outline: 'border border-slate-200 text-slate-600 bg-white',
-    gray: 'bg-slate-100 text-slate-700 border border-slate-200/60',
+    verified: 'border border-green text-green bg-green/5 font-medium',
+    gold: 'bg-amber-soft text-amber border border-amber/20 font-medium',
+    new: 'bg-cobalt-soft text-cobalt font-medium',
+    count: 'bg-red text-white min-h-[18px] min-w-[18px] px-1.5 text-[11px] font-semibold tabular-nums justify-center leading-none',
+    neutral: 'bg-panel-sunk text-ink-muted border border-line',
+    primary: 'bg-cobalt-soft text-cobalt',
+    secondary: 'bg-panel-sunk text-ink-muted',
+    gray: 'bg-panel-sunk text-ink-muted border border-line',
   };
 
   return (
@@ -42,20 +45,43 @@ export function Badge({
   );
 }
 
-export function VerifiedBadge({ size = 'sm', showLabel = true }: { size?: 'sm' | 'md'; showLabel?: boolean }) {
-  if (!showLabel) {
+// Company identity block verification badge per DESIGN.md §7
+export function VerifiedBadge({
+  tier = 'verified',
+  showLabel = true,
+  className,
+}: {
+  tier?: 'verified' | 'gold';
+  showLabel?: boolean;
+  className?: string;
+}) {
+  if (tier === 'gold') {
     return (
-      <CheckCircle2 className="w-4 h-4 text-emerald-600 fill-emerald-100 shrink-0 inline-block align-middle ml-1" />
+      <span
+        className={twMerge(
+          clsx(
+            'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-soft text-amber border border-amber/20',
+            className
+          )
+        )}
+      >
+        <Star className="w-3 h-3 fill-amber text-amber shrink-0" />
+        {showLabel && <span>Gold</span>}
+      </span>
     );
   }
 
   return (
-    <Badge
-      variant="verified"
-      size={size}
-      icon={<ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />}
+    <span
+      className={twMerge(
+        clsx(
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium border border-green text-green bg-green/5',
+          className
+        )
+      )}
     >
-      Verified
-    </Badge>
+      <Check className="w-3 h-3 stroke-[2.5] text-green shrink-0" />
+      {showLabel && <span>Verified</span>}
+    </span>
   );
 }

@@ -339,7 +339,11 @@ export class CompanyService {
         ...(input.yearFounded !== undefined && { yearFounded: input.yearFounded }),
         ...(input.logoUrl !== undefined && { logoUrl: input.logoUrl }),
         ...(input.coverUrl !== undefined && { coverUrl: input.coverUrl }),
-      },
+        ...(input.gstin !== undefined && {
+          gstin: input.gstin ? input.gstin.trim() : null,
+          verified: Boolean(input.gstin && input.gstin.trim().length >= 15),
+        }),
+      } as any,
       include: {
         category: true,
       },

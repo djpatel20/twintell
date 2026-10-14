@@ -32,6 +32,7 @@ import {
   ExternalLink,
   Tag,
   Plus,
+  ShieldCheck,
 } from 'lucide-react';
 import { Post, Product } from '../../../types';
 
@@ -182,6 +183,15 @@ export default function CompanyProfilePage() {
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3.5 h-3.5 text-slate-400" />
                               Est. {company.yearFounded}
+                            </span>
+                          </>
+                        )}
+                        {company.gstin && (
+                          <>
+                            <span>•</span>
+                            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/80">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              GSTIN: {company.gstin}
                             </span>
                           </>
                         )}
@@ -407,6 +417,18 @@ export default function CompanyProfilePage() {
                       <span className="font-semibold text-slate-800">{company.category.name}</span>
                     </div>
                   )}
+                  {company.gstin && (
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">GST Identification (GSTIN)</span>
+                      <span className="font-semibold text-slate-800 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        {company.gstin}
+                        <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                          Verified
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -426,6 +448,7 @@ export default function CompanyProfilePage() {
                   description: company.description,
                   tags: company.tags,
                   yearFounded: company.yearFounded,
+                  gstin: company.gstin,
                   logoUrl: company.logoUrl,
                   coverUrl: company.coverUrl,
                 }}

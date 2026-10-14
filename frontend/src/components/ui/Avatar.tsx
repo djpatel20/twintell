@@ -15,7 +15,7 @@ export interface AvatarProps {
 
 export function Avatar({ src, alt, name, size = 'md', className }: AvatarProps) {
   const [imageError, setImageError] = useState(false);
-  const imageAlt = alt || name || 'Avatar';
+  const imageAlt = alt || name || 'User avatar';
 
   const getInitials = (text?: string) => {
     if (!text) return 'U';
@@ -30,16 +30,16 @@ export function Avatar({ src, alt, name, size = 'md', className }: AvatarProps) 
     xs: 'w-6 h-6 text-[10px]',
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
-    lg: 'w-14 h-14 text-base font-semibold',
-    xl: 'w-20 h-20 text-xl font-bold',
+    lg: 'w-12 h-12 text-base font-semibold',
+    xl: 'w-16 h-16 text-lg font-bold',
   };
 
   const pixelDimensions = {
     xs: 24,
     sm: 32,
     md: 40,
-    lg: 56,
-    xl: 80,
+    lg: 48,
+    xl: 64,
   };
 
   const initials = getInitials(name || alt);
@@ -48,7 +48,7 @@ export function Avatar({ src, alt, name, size = 'md', className }: AvatarProps) 
     <div
       className={twMerge(
         clsx(
-          'relative rounded-full flex items-center justify-center overflow-hidden shrink-0 bg-slate-100 border border-slate-200 text-slate-700 font-medium select-none',
+          'relative rounded-full flex items-center justify-center overflow-hidden shrink-0 bg-panel-sunk border border-line text-ink-muted font-medium select-none',
           sizes[size],
           className
         )
@@ -62,7 +62,7 @@ export function Avatar({ src, alt, name, size = 'md', className }: AvatarProps) 
           height={pixelDimensions[size]}
           className="w-full h-full object-cover"
           onError={() => setImageError(true)}
-          unoptimized={src.startsWith('data:')}
+          unoptimized={src.startsWith('data:') || src.startsWith('blob:')}
         />
       ) : (
         <span className="leading-none">{initials}</span>

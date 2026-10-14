@@ -1,97 +1,129 @@
-"use client";
+'use client';
 
-import React from "react";
-import Link from "next/link";
-import { Search, Bell, Building2, MessageSquare } from "lucide-react";
-import { Avatar } from "../ui/Avatar";
-import { User } from "../../types";
-import { useNotifications } from "../../context/NotificationContext";
+import React, { useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Search, Bell, MessageSquare, PlusCircle } from 'lucide-react';
+import { Avatar } from '../ui/Avatar';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
+import { User } from '../../types';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface NavbarProps {
   user?: User | null;
   isLoading?: boolean;
-  onSearchClick?: () => void;
 }
 
-export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
+export function Navbar({ user, isLoading }: NavbarProps) {
+  const router = useRouter();
   const { unreadCount } = useNotifications();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Global Ctrl+K / Cmd+K shortcut listener per DESIGN.md §7
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const term = (
+      e.currentTarget.elements.namedItem('search') as HTMLInputElement
+    )?.value?.trim();
+    if (term) {
+      router.push(`/search?q=${encodeURIComponent(term)}`);
+    } else {
+      router.push('/search');
+    }
+  };
+
+  const isMac = typeof window !== 'undefined' && /Mac|iPhone|iPad/i.test(navigator.userAgent);
+  const shortcutHint = isMac ? '⌘K' : 'Ctrl K';
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur border-b border-slate-200">
-      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        {/* Brand logo - visible on mobile and desktop, aligned with left sidebar */}
-        <div className="flex items-center gap-2 lg:w-56 shrink-0">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl sm:text-2xl font-black tracking-tight text-primary-600">
+    <header className="sticky top-0 z-40 w-full bg-panel/95 backdrop-blur border-b border-line">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+        {/* Brand Logo - 240px alignment on desktop */}
+        <div className="flex items-center gap-2 lg:w-[240px] shrink-0">
+          <Link href="/" className="flex items-center gap-2 group">
+            <span className="font-display font-bold text-xl sm:text-2xl text-cobalt tracking-tight">
               Twintell
             </span>
           </Link>
         </div>
 
-        {/* Global Search Bar (Centered on Desktop) */}
+        {/* Global Search Bar (Wide, centered on desktop) */}
         <div className="flex-1 max-w-lg mx-auto">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const term = (
-                e.currentTarget.elements.namedItem("search") as HTMLInputElement
-              )?.value?.trim();
-              if (term) {
-                window.location.href = `/search?q=${encodeURIComponent(term)}`;
-              } else {
-                window.location.href = "/search";
-              }
-            }}
-            className="relative flex items-center w-full"
-          >
+          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
+            <div className="absolute left-3 text-ink-muted pointer-events-none flex items-center justify-center">
+              <Search className="w-4 h-4" />
+            </div>
             <input
+              ref={searchInputRef}
               type="text"
               name="search"
               placeholder="Search companies, products, posts..."
-              className="w-full bg-slate-100/90 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 rounded-full pl-9 pr-4 py-1.5 text-xs text-slate-800 placeholder-slate-400 transition-all border border-slate-200 outline-none"
+              className="w-full h-9 rounded-lg bg-panel-sunk border border-transparent pl-9 pr-14 text-xs sm:text-sm text-ink placeholder:text-ink-faint transition-all duration-120 outline-none focus:border-line focus:ring-[3px] focus:ring-cobalt-soft focus:bg-panel"
+              aria-label="Search companies, products, posts"
             />
-            <button
-              type="submit"
-              aria-label="Search"
-              className="absolute left-3 p-0 text-slate-400 hover:text-primary-600 transition-colors"
-            >
-              <Search className="w-3.5 h-3.5 shrink-0" />
-            </button>
+            <div className="absolute right-2.5 pointer-events-none hidden sm:flex items-center">
+              <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-ink-faint bg-panel border border-line">
+                {shortcutHint}
+              </kbd>
+            </div>
           </form>
         </div>
 
-        {/* Right action items */}
-        <div className="flex items-center gap-3">
+        {/* Right Action Items */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Link href="/directory" className="hidden sm:inline-flex">
+            <Button
+              variant="secondary"
+              size="sm"
+            >
+              Directory
+            </Button>
+          </Link>
+
           {/* Messages / Direct Chats */}
           <Link
-            href={user ? "/profile?tab=inquiries" : "/login"}
-            title="Messages & Chats"
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors relative"
-            aria-label="View messages and chats"
+            href={user ? '/profile?tab=inquiries' : '/login'}
+            title="Messages"
+            className="w-9 h-9 flex items-center justify-center text-ink-muted hover:text-ink hover:bg-panel-sunk rounded-lg transition-colors relative"
+            aria-label="Messages"
           >
             <MessageSquare className="w-5 h-5" />
           </Link>
 
-          {/* Notifications icon */}
+          {/* Notifications Bell */}
           <Link
-            href={user ? "/notifications" : "/login"}
+            href={user ? '/notifications' : '/login'}
             title="Notifications"
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-full transition-colors relative"
-            aria-label="View notifications"
+            className="w-9 h-9 flex items-center justify-center text-ink-muted hover:text-ink hover:bg-panel-sunk rounded-lg transition-colors relative"
+            aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-rose-500 text-white text-[10px] font-extrabold flex items-center justify-center rounded-full px-1 shadow-sm animate-in zoom-in">
-                {unreadCount > 99 ? "99+" : unreadCount}
+              <span className="absolute -top-1 -right-1">
+                <Badge variant="count">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Badge>
               </span>
             )}
           </Link>
 
-          {/* Profile / Auth trigger */}
+          {/* Profile Menu / Avatar */}
           {isLoading ? (
-            <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-panel-sunk animate-pulse" />
           ) : user ? (
-            <Link href="/profile" className="flex items-center gap-2">
+            <Link href="/profile" className="flex items-center shrink-0" aria-label="My profile">
               <Avatar
                 src={user.avatarUrl}
                 name={user.name}
@@ -100,11 +132,10 @@ export function Navbar({ user, isLoading, onSearchClick }: NavbarProps) {
               />
             </Link>
           ) : (
-            <Link
-              href="/login"
-              className="text-xs font-semibold px-3.5 py-1.5 bg-primary-500 hover:bg-primary-600 text-white rounded-full transition-colors shadow-sm"
-            >
-              Sign In
+            <Link href="/login" className="shrink-0">
+              <Button size="sm">
+                Sign in
+              </Button>
             </Link>
           )}
         </div>

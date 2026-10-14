@@ -6,7 +6,7 @@ import { twMerge } from 'tailwind-merge';
 import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
@@ -28,26 +28,29 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
+    // Base styles: 8px radius per DESIGN.md §5, focus visible outline per §10, 120ms transition per §9
     const baseStyles =
-      'inline-flex items-center justify-center font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed select-none active:scale-[0.98]';
+      'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-120 focus-visible:outline-2 focus-visible:outline-cobalt focus-visible:outline-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.99]';
 
+    // DESIGN.md §7 Button Variants
     const variants = {
       primary:
-        'bg-primary-500 hover:bg-primary-600 text-white shadow-sm focus:ring-primary-400',
+        'bg-cobalt text-white hover:bg-[#2338b3] active:bg-[#1d2e94]',
       secondary:
-        'bg-primary-50 text-primary-600 hover:bg-primary-100 focus:ring-primary-300 font-semibold',
+        'bg-panel border border-line text-ink hover:bg-panel-sunk hover:border-ink-faint',
       outline:
-        'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:ring-slate-200',
+        'bg-panel border border-line text-ink hover:bg-panel-sunk hover:border-ink-faint',
       ghost:
-        'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-200',
+        'bg-transparent text-ink-muted hover:bg-panel-sunk hover:text-ink',
       danger:
-        'bg-rose-500 hover:bg-rose-600 text-white focus:ring-rose-400',
+        'text-red bg-transparent hover:bg-red/10 border border-transparent hover:border-red/20',
     };
 
+    // Heights 36 (default/md), 32 (sm), 44 (lg/mobile primary) per DESIGN.md §7
     const sizes = {
-      sm: 'text-xs px-3 py-1.5 rounded-lg gap-1.5 h-8',
-      md: 'text-sm px-4 py-2.5 rounded-xl gap-2 h-10',
-      lg: 'text-base px-6 py-3 rounded-xl gap-2.5 h-12 font-semibold',
+      sm: 'h-8 px-2.5 text-xs gap-1.5',
+      md: 'h-9 px-3.5 text-sm gap-2',
+      lg: 'h-11 px-4 text-base font-semibold gap-2',
     };
 
     return (
@@ -58,12 +61,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin text-current" />
+          <Loader2 className="w-4 h-4 animate-spin text-current shrink-0" />
         ) : (
-          leftIcon
+          leftIcon && <span className="w-4 h-4 shrink-0 flex items-center justify-center">{leftIcon}</span>
         )}
         <span>{children}</span>
-        {!isLoading && rightIcon}
+        {!isLoading && rightIcon && (
+          <span className="w-4 h-4 shrink-0 flex items-center justify-center">{rightIcon}</span>
+        )}
       </button>
     );
   }

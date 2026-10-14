@@ -36,6 +36,7 @@ export const updateCompanySchema = z.object({
     .optional(),
   logoUrl: z.string().url('Invalid logo URL format.').nullable().optional(),
   coverUrl: z.string().url('Invalid cover URL format.').nullable().optional(),
+  gstin: z.string().max(20).nullable().optional(),
 });
 
 export type CompaniesQueryInput = z.infer<typeof companiesQuerySchema>;

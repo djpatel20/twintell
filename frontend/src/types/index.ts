@@ -47,6 +47,7 @@ export interface Company {
   description: string | null;
   tags: string[];
   yearFounded: number | null;
+  gstin?: string | null;
   verified: boolean;
   followerCount: number;
   createdAt: string;
