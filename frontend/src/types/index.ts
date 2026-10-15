@@ -33,6 +33,15 @@ export interface Category {
   icon: string | null;
 }
 
+export interface TopSector {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string | null;
+  companyCount: number;
+  productCount: number;
+}
+
 export interface Company {
   id: string;
   userId: string;

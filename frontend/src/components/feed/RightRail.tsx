@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../lib/api-client';
-import { Company } from '../../types';
+import { Company, TopSector } from '../../types';
 import { CompanyLogo } from '../ui/CompanyLogo';
 import { VerifiedBadge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -70,13 +70,14 @@ export function RightRail() {
     }
   };
 
-  const trendingTags = [
-    { tag: 'PackagingMaterials', count: 184 },
-    { tag: 'TextilesAndFabrics', count: 129 },
-    { tag: 'IndustrialMachinery', count: 96 },
-    { tag: 'PolymerResins', count: 78 },
-    { tag: 'DirectToConsumer', count: 54 },
-  ];
+  // Fetch REAL active trade sectors from database
+  const { data: sectorsData, isLoading: isSectorsLoading } = useQuery({
+    queryKey: ['top-sectors'],
+    queryFn: () => api.get<{ data: TopSector[] }>('/api/categories/top-sectors?limit=5'),
+    staleTime: 60000,
+  });
+
+  const topSectors = sectorsData?.data || [];
 
   return (
     <div className="w-[320px] space-y-4 text-ink select-none">
@@ -265,28 +266,59 @@ export function RightRail() {
         )}
       </div>
 
-      {/* 3. Trending in Your Categories */}
-      <div className="card-base p-4 bg-panel border-line space-y-2.5">
-        <div className="flex items-center gap-1.5 text-ink">
-          <TrendingUp className="w-4 h-4 text-cobalt" />
-          <h3 className="text-sm font-semibold">Trending topics</h3>
+      {/* 3. Active Trade Sectors (100% Real Database Metrics) */}
+      <div className="card-base p-4 bg-panel border-line space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 text-ink">
+            <TrendingUp className="w-4 h-4 text-cobalt" />
+            <h3 className="text-sm font-semibold">Active trade sectors</h3>
+          </div>
+          <Link
+            href="/directory"
+            className="text-xs text-ink-muted hover:text-cobalt font-medium inline-flex items-center gap-0.5"
+          >
+            <span>All</span>
+            <ArrowRight className="w-3 h-3" />
+          </Link>
         </div>
-        <div className="space-y-2">
-          {trendingTags.map((item) => (
-            <Link
-              key={item.tag}
-              href={`/search?q=${encodeURIComponent(item.tag)}`}
-              className="flex items-center justify-between text-xs py-1 group"
-            >
-              <span className="text-ink group-hover:text-cobalt font-medium">
-                #{item.tag}
-              </span>
-              <span className="text-ink-muted tabular-nums text-[11px]">
-                {item.count} updates
-              </span>
-            </Link>
-          ))}
-        </div>
+
+        {isSectorsLoading ? (
+          <div className="space-y-2.5">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center justify-between py-1 animate-pulse">
+                <div className="w-32 h-3.5 bg-panel-sunk rounded" />
+                <div className="w-16 h-3 bg-panel-sunk rounded" />
+              </div>
+            ))}
+          </div>
+        ) : topSectors.length === 0 ? (
+          <p className="text-xs text-ink-muted py-1">
+            Browse the directory to explore industrial sectors.
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {topSectors.map((sector) => (
+              <Link
+                key={sector.id}
+                href={`/directory?category=${encodeURIComponent(sector.slug)}`}
+                className="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg hover:bg-panel-sunk transition-colors group"
+                title={`Browse ${sector.name} in Directory`}
+              >
+                <div className="flex items-center gap-2 min-w-0 pr-2">
+                  <span className="w-2 h-2 rounded-full bg-cobalt shrink-0" />
+                  <span className="text-ink group-hover:text-cobalt font-medium truncate">
+                    {sector.name}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-ink-muted tabular-nums text-[11px] font-medium">
+                    {sector.companyCount} {sector.companyCount === 1 ? 'supplier' : 'suppliers'}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Footer / Copyright */}
