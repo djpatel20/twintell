@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { AppShell } from '../components/layout/AppShell';
 import { SegmentedControl } from '../components/ui/SegmentedControl';
@@ -15,8 +15,9 @@ import { CreatePostBox } from '../components/feed/CreatePostBox';
 import { PersonalWelcomeStrip } from '../components/feed/PersonalWelcomeStrip';
 import { NewPostsPill } from '../components/feed/NewPostsPill';
 import { RightRail } from '../components/feed/RightRail';
+import { SponsoredAdCard } from '../components/feed/SponsoredAdCard';
 import { api } from '../lib/api-client';
-import { Post } from '../types';
+import { Post, SponsoredAd } from '../types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { STATIC_CATEGORIES } from '../constants/categories';
 
@@ -66,6 +67,14 @@ export default function HomePage() {
     staleTime: 60000,
   });
 
+  // Fetch active sponsored ads
+  const { data: adsData } = useQuery({
+    queryKey: ['active-in-feed-ads'],
+    queryFn: () => api.get<{ data: SponsoredAd[] }>('/api/feed/ads'),
+    staleTime: 60000,
+  });
+
+  const activeAds = adsData?.data || [];
   const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
 
   const handleRefreshFeed = async () => {
@@ -175,8 +184,16 @@ export default function HomePage() {
           />
         ) : (
           <div className="space-y-3 pt-1">
-            {allPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
+            {allPosts.map((post, idx) => (
+              <React.Fragment key={post.id}>
+                <PostCard post={post} />
+                {idx === 2 && activeAds.length > 0 && (
+                  <SponsoredAdCard ad={activeAds[0]} />
+                )}
+                {idx === 6 && activeAds.length > 1 && (
+                  <SponsoredAdCard ad={activeAds[1]} />
+                )}
+              </React.Fragment>
             ))}
 
             {/* Load More Button */}

@@ -11,6 +11,7 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
+  ADMIN_SECRET: z.string().default('twintell-admin-secret-key-2026'),
 });
 
 const _env = envSchema.safeParse(process.env);

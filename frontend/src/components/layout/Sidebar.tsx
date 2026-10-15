@@ -14,6 +14,7 @@ import {
   LogIn,
   Zap,
   ChevronDown,
+  ShieldCheck,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Avatar } from '../ui/Avatar';
@@ -70,6 +71,17 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
       icon: UserIcon,
       isActive: pathname === '/profile' && !isMessagesActive,
     },
+    ...(user?.role === 'ADMIN'
+      ? [
+          {
+            label: 'Admin Console',
+            href: '/admin',
+            icon: ShieldCheck,
+            isActive: pathname.startsWith('/admin'),
+            highlight: true,
+          },
+        ]
+      : []),
   ];
 
   return (

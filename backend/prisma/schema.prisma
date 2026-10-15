@@ -14,6 +14,7 @@ datasource db {
 enum Role {
   USER
   COMPANY
+  ADMIN
 }
 
 enum PostTopic {
@@ -57,6 +58,7 @@ model User {
   inquiryMessages InquiryMessage[]
   notificationsReceived Notification[] @relation("UserNotifications")
   notificationsSent     Notification[] @relation("ActorNotifications")
+  payments  Payment[]
 }
 
 model Category {
@@ -96,6 +98,8 @@ model Company {
   followers    Follow[]
   inquiries    Inquiry[]
   subscription Subscription?
+  payments     Payment[]
+  sponsoredAds SponsoredAd[]
 
   @@index([categoryId])
   @@index([city])
@@ -241,6 +245,7 @@ model Plan {
   createdAt          DateTime @default(now())
 
   subscriptions Subscription[]
+  payments      Payment[]
 }
 
 // Har company ki ek current subscription. Phase 1 mein sab FREE plan pe.
@@ -282,5 +287,67 @@ model Notification {
   @@index([userId, createdAt(sort: Desc)])
   @@index([actorId])
   @@index([postId])
+}
+
+// ---------- Admin & Payments & In-Feed Advertising ----------
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  companyId   String?       @db.Uuid
+  userId      String?       @db.Uuid
+  planId      String?       @db.Uuid
+  amount      Decimal       @db.Decimal(10, 2)
+  currency    String        @default("INR")
+  gateway     String        @default("RAZORPAY") // RAZORPAY, MANUAL, UPI
+  orderId     String?       @unique
+  paymentId   String?       @unique
+  signature   String?
+  status      PaymentStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  company     Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  plan        Plan?         @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt(sort: Desc)])
+  @@index([status])
+}
+
+enum AdStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+model SponsoredAd {
+  id          String    @id @default(uuid()) @db.Uuid
+  companyId   String?   @db.Uuid
+  title       String
+  description String
+  imageUrl    String
+  ctaText     String    @default("Learn More")
+  ctaUrl      String
+  category    String?   // optional targeted business category
+  status      AdStatus  @default(ACTIVE)
+  impressions Int       @default(0)
+  clicks      Int       @default(0)
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  company     Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([status, startDate, endDate])
+  @@index([category])
 }
 

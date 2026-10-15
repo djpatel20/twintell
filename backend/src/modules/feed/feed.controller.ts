@@ -15,6 +15,16 @@ export class FeedController {
       next(error);
     }
   }
+
+  async getActiveAds(req: Request, res: Response, next: NextFunction) {
+    try {
+      const category = req.query.category as string | undefined;
+      const ads = await feedService.getActiveAds(category);
+      return res.status(200).json({ data: ads });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const feedController = new FeedController();

@@ -142,3 +142,22 @@ export function onlyCompany(req: Request, res: Response, next: NextFunction) {
 
   next();
 }
+
+/**
+ * Middleware: Requires the user to have ADMIN role.
+ * Must be preceded by requireAuth.
+ */
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    return next(new AppError('Authentication required.', 401, 'UNAUTHORIZED'));
+  }
+
+  if (req.user.role !== 'ADMIN') {
+    return next(
+      new AppError('Forbidden: This action requires Administrator privileges.', 403, 'FORBIDDEN')
+    );
+  }
+
+  next();
+}
+

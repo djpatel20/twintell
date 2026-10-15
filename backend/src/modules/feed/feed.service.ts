@@ -128,6 +128,46 @@ export class FeedService {
       nextCursor,
     };
   }
+
+  async getActiveAds(category?: string) {
+    const now = new Date();
+    const where: any = {
+      status: 'ACTIVE',
+      startDate: { lte: now },
+      OR: [
+        { endDate: null },
+        { endDate: { gte: now } },
+      ],
+    };
+
+    if (category) {
+      where.category = category;
+    }
+
+    const ads = await prisma.sponsoredAd.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: {
+        company: {
+          select: { id: true, name: true, logoUrl: true, slug: true },
+        },
+      },
+    });
+
+    // Asynchronously bump impressions
+    if (ads.length > 0) {
+      const adIds = ads.map((a) => a.id);
+      prisma.sponsoredAd
+        .updateMany({
+          where: { id: { in: adIds } },
+          data: { impressions: { increment: 1 } },
+        })
+        .catch(() => {});
+    }
+
+    return ads;
+  }
 }
 
 export const feedService = new FeedService();

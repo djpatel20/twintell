@@ -1,4 +1,4 @@
-export type Role = 'USER' | 'COMPANY';
+export type Role = 'USER' | 'COMPANY' | 'ADMIN';
 
 export type PostTopic =
   | 'BUSINESS_NEWS'
@@ -265,5 +265,83 @@ export interface SubscriptionDetailsResponse {
     canReceiveInquiries: boolean;
   };
 }
+
+export interface AdminStats {
+  totalCompanies: number;
+  totalUsers: number;
+  totalPosts: number;
+  totalProducts: number;
+  activePaidSubscriptions: number;
+  activeAds: number;
+  estimatedAnnualRevenue: number;
+  planBreakdown: {
+    FREE: number;
+    PRO: number;
+    ADVERTISING: number;
+    LEAD_GEN: number;
+  };
+}
+
+export interface AdminCompany {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  city: string;
+  state: string;
+  businessType: string;
+  verified: boolean;
+  createdAt: string;
+  owner: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  stats: {
+    totalPosts: number;
+    postsThisMonth: number;
+    totalProducts: number;
+    followers: number;
+    inquiries: number;
+  };
+  subscription: {
+    id: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string | null;
+    plan: {
+      id: string;
+      code: string;
+      name: string;
+      priceYearly: number;
+      postsPerMonth: number | null;
+      productsLimit: number | null;
+    };
+  } | null;
+}
+
+export interface SponsoredAd {
+  id: string;
+  companyId?: string | null;
+  title: string;
+  description: string;
+  imageUrl: string;
+  ctaText: string;
+  ctaUrl: string;
+  category?: string | null;
+  status: 'ACTIVE' | 'PAUSED' | 'EXPIRED';
+  impressions: number;
+  clicks: number;
+  startDate: string;
+  endDate?: string | null;
+  createdAt: string;
+  company?: {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    slug: string;
+  } | null;
+}
+
 
 
