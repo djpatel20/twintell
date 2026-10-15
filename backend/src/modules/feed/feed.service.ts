@@ -8,13 +8,18 @@ export class FeedService {
    * Retrieves paginated feed posts with company info and user-specific like status.
    */
   async getFeed(userId: string | null | undefined, query: FeedQueryInput) {
-    const { tab, topic, cursor, limit } = query;
+    const { tab, topic, category, cursor, limit } = query;
 
     const where: Prisma.PostWhereInput = {};
 
-    // 1. Topic filtering
-    if (topic) {
-      where.topic = topic;
+    // 1. Category / Industry sector filtering
+    const filterCat = category || (topic && topic !== 'ALL' ? topic : undefined);
+    if (filterCat) {
+      where.OR = [
+        { category: { slug: filterCat } },
+        { categoryId: filterCat },
+        { company: { category: { slug: filterCat } } },
+      ];
     }
 
     // 2. Tab filtering
@@ -54,6 +59,14 @@ export class FeedService {
       orderBy,
       take: limit + 1,
       include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            icon: true,
+          },
+        },
         company: {
           select: {
             id: true,
@@ -64,6 +77,14 @@ export class FeedService {
             city: true,
             state: true,
             verified: true,
+            gstin: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+              },
+            },
           },
         },
       },

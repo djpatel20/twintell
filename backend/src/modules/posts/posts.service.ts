@@ -9,14 +9,33 @@ export class PostsService {
    * Creates a new post for an authenticated company.
    */
   async createPost(companyId: string, input: CreatePostInput) {
+    let targetCategoryId = input.categoryId;
+    if (!targetCategoryId && input.categorySlug) {
+      const cat = await prisma.category.findUnique({ where: { slug: input.categorySlug } });
+      if (cat) targetCategoryId = cat.id;
+    }
+    if (!targetCategoryId) {
+      const comp = await prisma.company.findUnique({ where: { id: companyId }, select: { categoryId: true } });
+      if (comp?.categoryId) targetCategoryId = comp.categoryId;
+    }
+
     const post = await prisma.post.create({
       data: {
         companyId,
+        categoryId: targetCategoryId,
         content: input.content,
         images: input.images,
         topic: input.topic,
       },
       include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            icon: true,
+          },
+        },
         company: {
           select: {
             id: true,
@@ -47,6 +66,14 @@ export class PostsService {
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            icon: true,
+          },
+        },
         company: {
           select: {
             id: true,

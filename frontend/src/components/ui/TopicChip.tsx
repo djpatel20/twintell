@@ -4,6 +4,22 @@ import React from 'react';
 import { Chip, ChipProps } from './Chip';
 
 export const CATEGORY_COLORS: Record<string, string> = {
+  // 13 Unified Business Categories
+  'industrial-plants-machinery': 'var(--cat-mfg)',
+  'industrial-equipment-supplies': 'var(--cobalt)',
+  'electrical-electronics': 'var(--cat-tech)',
+  'construction-building-materials': 'var(--cat-wholesale)',
+  'textiles-apparel-fashion': '#8b5cf6',
+  'food-beverages-agriculture': '#10b981',
+  'chemicals': '#f43f5e',
+  'plastics-rubber': '#06b6d4',
+  'metals-steel-minerals': '#64748b',
+  'packaging-printing-paper': '#f59e0b',
+  'beauty-personal-care-wellness': '#ec4899',
+  'automotive-spare-parts': '#ef4444',
+  'it-software-digital-services': '#6366f1',
+
+  // Legacy topics
   MANUFACTURING: 'var(--cat-mfg)',
   BUSINESS_NEWS: 'var(--cat-news)',
   PRODUCTS: 'var(--cat-products)',

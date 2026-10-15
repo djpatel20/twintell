@@ -3,11 +3,14 @@ import { PostTopic } from '@prisma/client';
 
 export const feedQuerySchema = z.object({
   tab: z.enum(['for-you', 'following', 'trending']).default('for-you'),
+  category: z
+    .string()
+    .optional()
+    .transform((val) => (val === 'ALL' || !val ? undefined : val)),
   topic: z
     .string()
     .optional()
-    .transform((val) => (val === 'ALL' || !val ? undefined : val))
-    .pipe(z.nativeEnum(PostTopic).optional()),
+    .transform((val) => (val === 'ALL' || !val ? undefined : val)),
   cursor: z.string().optional(),
   limit: z
     .string()

@@ -8,7 +8,7 @@ async function main() {
   // 1. Seed Categories (Official 13 Final Business Categories)
   const categoriesData = [
     { name: 'Industrial Plants & Machinery', slug: 'industrial-plants-machinery', icon: 'Cog' },
-    { name: 'Industrial Equipment Supplies', slug: 'industrial-equipment-supplies', icon: 'Wrench' },
+    { name: 'Industrial Equipment & Supplies', slug: 'industrial-equipment-supplies', icon: 'Wrench' },
     { name: 'Electrical & Electronics', slug: 'electrical-electronics', icon: 'Cpu' },
     { name: 'Construction & Building Materials', slug: 'construction-building-materials', icon: 'Building' },
     { name: 'Textiles, Apparel & Fashion', slug: 'textiles-apparel-fashion', icon: 'Shirt' },
@@ -17,9 +17,9 @@ async function main() {
     { name: 'Plastics & Rubber', slug: 'plastics-rubber', icon: 'Layers' },
     { name: 'Metals, Steel & Minerals', slug: 'metals-steel-minerals', icon: 'Hammer' },
     { name: 'Packaging, Printing & Paper', slug: 'packaging-printing-paper', icon: 'Package' },
-    { name: 'Beauty, Personal Care & Wellness Products', slug: 'beauty-personal-care-wellness', icon: 'Sparkles' },
+    { name: 'Beauty, Personal Care & Wellness', slug: 'beauty-personal-care-wellness', icon: 'Sparkles' },
     { name: 'Automotive & Spare Parts', slug: 'automotive-spare-parts', icon: 'Car' },
-    { name: 'IT, Software & Digital Service', slug: 'it-software-digital-service', icon: 'Laptop' },
+    { name: 'IT, Software & Digital Services', slug: 'it-software-digital-services', icon: 'Laptop' },
   ];
 
   const categories: Record<string, string> = {};

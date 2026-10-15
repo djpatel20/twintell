@@ -66,6 +66,7 @@ model Category {
   icon      String?
   companies Company[]
   products  Product[]
+  posts     Post[]
 }
 
 model Company {
@@ -129,21 +130,24 @@ model Product {
 model Post {
   id           String    @id @default(uuid()) @db.Uuid
   companyId    String    @db.Uuid
+  categoryId   String?   @db.Uuid
   content      String
   images       String[]
-  topic        PostTopic
+  topic        PostTopic @default(BUSINESS_NEWS)
   likeCount    Int       @default(0)
   commentCount Int       @default(0)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category      Category?      @relation(fields: [categoryId], references: [id])
   likes         Like[]
   comments      Comment[]
   notifications Notification[]
 
   @@index([createdAt(sort: Desc)])
   @@index([companyId, createdAt(sort: Desc)])
+  @@index([categoryId, createdAt(sort: Desc)])
   @@index([topic, createdAt(sort: Desc)])
 }
 

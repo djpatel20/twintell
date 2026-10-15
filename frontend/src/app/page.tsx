@@ -18,16 +18,11 @@ import { RightRail } from '../components/feed/RightRail';
 import { api } from '../lib/api-client';
 import { Post } from '../types';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { STATIC_CATEGORIES } from '../constants/categories';
 
-const TOPICS = [
-  { id: 'ALL', label: 'All' },
-  { id: 'MANUFACTURING', label: 'Manufacturing' },
-  { id: 'BUSINESS_NEWS', label: 'Business News' },
-  { id: 'PRODUCTS', label: 'Products' },
-  { id: 'WHOLESALE', label: 'Wholesale' },
-  { id: 'D2C_BRANDS', label: 'D2C / Brands' },
-  { id: 'TECHNOLOGY', label: 'Technology' },
-  { id: 'AGRICULTURE', label: 'Agriculture' },
+const FILTER_CATEGORIES = [
+  { id: 'ALL', label: 'All Industries' },
+  ...STATIC_CATEGORIES.map((c) => ({ id: c.slug, label: c.name })),
 ];
 
 const FEED_TABS = [
@@ -59,7 +54,7 @@ export default function HomePage() {
         tab: activeTab,
       };
       if (selectedTopic !== 'ALL') {
-        params.topic = selectedTopic;
+        params.category = selectedTopic;
       }
       if (pageParam) {
         params.cursor = pageParam;
@@ -79,7 +74,7 @@ export default function HomePage() {
     await refetch();
   };
 
-  const selectedTopicObj = TOPICS.find((t) => t.id === selectedTopic);
+  const selectedCategoryObj = FILTER_CATEGORIES.find((t) => t.id === selectedTopic);
 
   return (
     <AppShell showRightSidebar={true} rightSidebar={<RightRail />}>
@@ -124,13 +119,13 @@ export default function HomePage() {
 
           {/* Chips container */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 px-1">
-            {TOPICS.map((topic) => (
+            {FILTER_CATEGORIES.map((cat) => (
               <TopicChip
-                key={topic.id}
-                topicId={topic.id}
-                label={topic.label}
-                isSelected={selectedTopic === topic.id}
-                onClick={() => setSelectedTopic(topic.id)}
+                key={cat.id}
+                topicId={cat.id}
+                label={cat.label}
+                isSelected={selectedTopic === cat.id}
+                onClick={() => setSelectedTopic(cat.id)}
               />
             ))}
           </div>
@@ -162,7 +157,7 @@ export default function HomePage() {
             title={
               activeTab === 'following'
                 ? 'No updates from companies you follow yet'
-                : `No posts in ${selectedTopicObj?.label || 'this category'} yet`
+                : `No posts in ${selectedCategoryObj?.label || 'this category'} yet`
             }
             description={
               activeTab === 'following'

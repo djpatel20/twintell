@@ -11,9 +11,12 @@ export const createPostSchema = z.object({
     .array(z.string().url('Invalid image URL format.'))
     .max(4, 'A maximum of 4 images can be attached per post.')
     .default([]),
-  topic: z.nativeEnum(PostTopic, {
-    errorMap: () => ({ message: 'Please select a valid post topic category.' }),
-  }),
+  topic: z
+    .nativeEnum(PostTopic)
+    .optional()
+    .default(PostTopic.BUSINESS_NEWS),
+  categoryId: z.string().optional(),
+  categorySlug: z.string().optional(),
 });
 
 export const createCommentSchema = z.object({

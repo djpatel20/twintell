@@ -82,8 +82,13 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
 
   const isOwner = company?.id === post.companyId;
 
-  // 3px category-colored left stripe color per DESIGN.md §7
-  const categoryColor = CATEGORY_COLORS[post.topic] || 'var(--cobalt)';
+  // 3px category-colored left stripe color prioritizing unified category
+  const displayCategorySlug = post.category?.slug || post.company?.category?.slug;
+  const displayCategoryName = post.category?.name || post.company?.category?.name || post.topic?.replace(/_/g, ' ').toLowerCase();
+  const categoryColor =
+    (displayCategorySlug && CATEGORY_COLORS[displayCategorySlug]) ||
+    (post.topic && CATEGORY_COLORS[post.topic]) ||
+    'var(--cobalt)';
 
   const handleLikeToggle = async () => {
     if (!user) {
@@ -197,9 +202,9 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
 
         <div className="flex items-center gap-2 shrink-0">
           <TopicChip
-            topicId={post.topic}
-            label={topicLabel}
-            className="capitalize hidden sm:inline-flex"
+            topicId={displayCategorySlug || post.topic}
+            label={displayCategoryName}
+            className="hidden sm:inline-flex"
           />
 
           {isOwner && (

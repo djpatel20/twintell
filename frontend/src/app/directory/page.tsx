@@ -157,6 +157,7 @@ function DirectoryContent() {
               <TopicChip
                 key={cat.id}
                 label={cat.name}
+                topicId={cat.slug}
                 isSelected={selectedCategory === cat.slug || selectedCategory === cat.id}
                 onClick={() => setSelectedCategory(cat.slug)}
               />

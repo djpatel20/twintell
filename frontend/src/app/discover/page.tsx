@@ -114,8 +114,13 @@ export default function DiscoverPage() {
         return Sparkle;
       case 'automotive-spare-parts':
         return Car;
+      case 'it-software-digital-services':
       case 'it-software-digital-service':
         return Laptop;
+      case 'plastics-rubber':
+        return Layers;
+      case 'metals-steel-minerals':
+        return HardHat;
       default:
         return Building2;
     }

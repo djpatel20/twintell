@@ -88,6 +88,8 @@ export interface Product {
 export interface Post {
   id: string;
   companyId: string;
+  categoryId?: string | null;
+  category?: Category | null;
   content: string;
   images: string[];
   topic: PostTopic;
@@ -104,6 +106,12 @@ export interface Post {
     city: string;
     state: string;
     verified: boolean;
+    gstin?: string | null;
+    category?: {
+      id: string;
+      name: string;
+      slug: string;
+    } | null;
   };
   isLiked?: boolean;
 }

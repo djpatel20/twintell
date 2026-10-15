@@ -4,7 +4,6 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api-client';
-import { PostTopic } from '../../types';
 import { CompanyLogo } from '../ui/CompanyLogo';
 import { Button } from '../ui/Button';
 import { SegmentedControl } from '../ui/SegmentedControl';
@@ -18,6 +17,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { STATIC_CATEGORIES } from '../../constants/categories';
 
 type PostType = 'update' | 'product' | 'news';
 
@@ -27,23 +27,15 @@ const POST_TYPES = [
   { id: 'news' as PostType, label: 'News' },
 ];
 
-const TOPICS: { id: PostTopic; label: string }[] = [
-  { id: 'MANUFACTURING', label: 'Manufacturing' },
-  { id: 'BUSINESS_NEWS', label: 'Business News' },
-  { id: 'PRODUCTS', label: 'Products' },
-  { id: 'WHOLESALE', label: 'Wholesale' },
-  { id: 'D2C_BRANDS', label: 'D2C / Brands' },
-  { id: 'TECHNOLOGY', label: 'Technology' },
-  { id: 'AGRICULTURE', label: 'Agriculture' },
-];
-
 export function CreatePostBox() {
   const { user, role, company } = useAuth();
   const queryClient = useQueryClient();
 
   const [postType, setPostType] = useState<PostType>('update');
   const [content, setContent] = useState('');
-  const [topic, setTopic] = useState<PostTopic>('BUSINESS_NEWS');
+  const [categorySlug, setCategorySlug] = useState<string>(
+    company?.category?.slug || STATIC_CATEGORIES[0].slug
+  );
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,8 +67,6 @@ export function CreatePostBox() {
 
   const handlePostTypeChange = (type: PostType) => {
     setPostType(type);
-    if (type === 'product') setTopic('PRODUCTS');
-    else if (type === 'news') setTopic('BUSINESS_NEWS');
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,7 +157,7 @@ export function CreatePostBox() {
     try {
       await api.post('/api/posts', {
         content: content.trim(),
-        topic,
+        categorySlug,
         images,
       });
 
@@ -245,20 +235,20 @@ export function CreatePostBox() {
         <div className="space-y-3 pt-1">
           {/* Category Select Chips */}
           <div className="space-y-1.5">
-            <span className="text-xs font-medium text-ink-muted">Category</span>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {TOPICS.map((t) => (
+            <span className="text-xs font-medium text-ink-muted">Industry Category</span>
+            <div className="flex items-center gap-1.5 flex-wrap max-h-36 overflow-y-auto no-scrollbar py-0.5">
+              {STATIC_CATEGORIES.map((c) => (
                 <button
-                  key={t.id}
+                  key={c.slug}
                   type="button"
-                  onClick={() => setTopic(t.id)}
+                  onClick={() => setCategorySlug(c.slug)}
                   className={`px-2.5 py-1 text-xs rounded-full font-medium transition-colors ${
-                    topic === t.id
+                    categorySlug === c.slug
                       ? 'bg-cobalt-soft text-cobalt font-semibold'
                       : 'bg-panel-sunk text-ink-muted hover:text-ink hover:bg-line'
                   }`}
                 >
-                  {t.label}
+                  {c.name}
                 </button>
               ))}
             </div>
