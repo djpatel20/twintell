@@ -2,6 +2,7 @@ import { prisma } from '../../lib/prisma';
 import { CreateProductInput, UpdateProductInput, ProductsQueryInput } from './products.schema';
 import { AppError } from '../../middleware/error-handler';
 import { Prisma } from '@prisma/client';
+import { AuthUser } from '../../middleware/auth';
 
 export class ProductsService {
   /**
@@ -105,6 +106,16 @@ export class ProductsService {
                 id: true,
                 name: true,
                 email: true,
+              },
+            },
+            subscription: {
+              select: {
+                plan: {
+                  select: {
+                    code: true,
+                    name: true,
+                  },
+                },
               },
             },
           },
@@ -216,9 +227,9 @@ export class ProductsService {
   }
 
   /**
-   * Deletes a product belonging to the authenticated company.
+   * Deletes a product belonging to the authenticated company, or any product if admin.
    */
-  async deleteProduct(productId: string, companyId: string) {
+  async deleteProduct(productId: string, user: AuthUser) {
     const existing = await prisma.product.findUnique({
       where: { id: productId },
     });
@@ -227,7 +238,7 @@ export class ProductsService {
       throw new AppError('Product not found.', 404, 'NOT_FOUND');
     }
 
-    if (existing.companyId !== companyId) {
+    if (user.role !== 'ADMIN' && existing.companyId !== user.companyId) {
       throw new AppError('You can only delete products belonging to your own company.', 403, 'FORBIDDEN');
     }
 

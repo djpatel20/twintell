@@ -137,6 +137,7 @@ export interface InquiryMessage {
   senderId: string;
   content: string;
   createdAt: string;
+  status?: 'pending' | 'sent' | 'failed';
   sender?: {
     id: string;
     name: string;

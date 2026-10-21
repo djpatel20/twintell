@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { postsController } from './posts.controller';
-import { requireAuth, optionalAuth, onlyCompany } from '../../middleware/auth';
+import { requireAuth, optionalAuth, onlyCompany, requireCompanyOrAdmin } from '../../middleware/auth';
 import { checkPostLimit } from '../../middleware/check-limit';
 
 const router = Router();
@@ -15,8 +15,8 @@ router.get('/:id', optionalAuth, (req, res, next) => {
   postsController.getPostById(req, res, next);
 });
 
-// DELETE /api/posts/:id — Company owner only
-router.delete('/:id', requireAuth, onlyCompany, (req, res, next) => {
+// DELETE /api/posts/:id — Company owner or Admin
+router.delete('/:id', requireAuth, requireCompanyOrAdmin, (req, res, next) => {
   postsController.deletePost(req, res, next);
 });
 

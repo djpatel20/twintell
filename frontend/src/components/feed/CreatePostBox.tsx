@@ -273,25 +273,6 @@ export function CreatePostBox() {
             </div>
           )}
 
-          {/* URL Input Form */}
-          {showUrlInput && (
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="url"
-                value={imageUrlInput}
-                onChange={(e) => setImageUrlInput(e.target.value)}
-                placeholder="https://example.com/product-image.jpg"
-                className="flex-1 h-8 rounded-lg bg-panel-sunk px-3 text-xs text-ink placeholder:text-ink-faint border border-line outline-none focus:ring-2 focus:ring-cobalt-soft"
-              />
-              <Button size="sm" variant="secondary" onClick={handleAddImageUrl}>
-                Add
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setShowUrlInput(false)}>
-                Cancel
-              </Button>
-            </div>
-          )}
-
           {/* Error Message */}
           {errorMsg && (
             <div className="flex items-center gap-2 text-xs text-red font-medium">
@@ -319,18 +300,7 @@ export function CreatePostBox() {
                 disabled={isUploading || images.length >= 4}
                 leftIcon={isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
               >
-                {isUploading ? 'Uploading…' : 'Attach image'}
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowUrlInput(!showUrlInput)}
-                disabled={images.length >= 4}
-                leftIcon={<LinkIcon className="w-4 h-4" />}
-              >
-                URL
+                {isUploading ? 'Uploading…' : 'Upload Photos'}
               </Button>
             </div>
 

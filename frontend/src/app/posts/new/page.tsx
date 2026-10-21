@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '../../../context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api-client';
+import { toast } from '../../../context/ToastContext';
 import { PostTopic } from '../../../types';
 import { AppShell } from '../../../components/layout/AppShell';
 import { Avatar } from '../../../components/ui/Avatar';
@@ -205,6 +206,7 @@ export default function CreatePostPage() {
       });
 
       setSuccessMsg('Your business post was published successfully!');
+      toast.success('Post Published', 'Your business post was published successfully!');
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
 
       // Redirect after brief delay
@@ -212,7 +214,9 @@ export default function CreatePostPage() {
         router.push(res?.data?.id ? `/posts/${res.data.id}` : '/');
       }, 1000);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to publish post. Please verify your connection.');
+      const msg = err?.message || 'Failed to publish post. Please verify your connection.';
+      setErrorMsg(msg);
+      toast.error('Publish Failed', msg);
       setIsSubmitting(false);
     }
   };
@@ -430,38 +434,6 @@ export default function CreatePostPage() {
                     >
                       {isUploading ? 'Uploading to Storage...' : 'Upload Photos'}
                     </Button>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowUrlInput(!showUrlInput)}
-                      className="text-xs font-semibold text-slate-600 hover:text-primary-600 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors flex items-center gap-1.5 w-full sm:w-auto justify-center"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Attach via Image URL</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Direct Image URL input */}
-                {showUrlInput && (
-                  <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl animate-fade-in">
-                    <input
-                      type="url"
-                      value={imageUrlInput}
-                      onChange={(e) => setImageUrlInput(e.target.value)}
-                      placeholder="Paste image link: https://example.com/photo.jpg"
-                      className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-primary-500"
-                    />
-                    <Button size="sm" type="button" onClick={handleAddImageUrl}>
-                      Add
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setShowUrlInput(false)}
-                      className="text-xs text-slate-400 hover:text-slate-600 px-2"
-                    >
-                      Cancel
-                    </button>
                   </div>
                 )}
               </div>

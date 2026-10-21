@@ -6,6 +6,7 @@ import { getQueryClient } from '../lib/query-client';
 
 import { AuthProvider } from '../context/AuthContext';
 import { NotificationProvider } from '../context/NotificationContext';
+import { ToastProvider } from '../context/ToastContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
@@ -13,7 +14,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <NotificationProvider>{children}</NotificationProvider>
+        <NotificationProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </NotificationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

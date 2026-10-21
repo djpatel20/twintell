@@ -13,7 +13,11 @@ export class InquiriesService {
   async createInquiry(userId: string, input: CreateInquiryInput) {
     const company = await prisma.company.findUnique({
       where: { id: input.companyId },
-      select: { id: true, userId: true, name: true },
+      include: {
+        subscription: {
+          include: { plan: true },
+        },
+      },
     });
 
     if (!company) {
@@ -22,6 +26,16 @@ export class InquiriesService {
 
     if (company.userId === userId) {
       throw new AppError('You cannot submit an inquiry to your own company.', 400, 'BAD_REQUEST');
+    }
+
+    // Plan rule: Free plan companies do not have buyer enquiries enabled
+    const planCode = company.subscription?.plan?.code || 'FREE';
+    if (planCode === 'FREE') {
+      throw new AppError(
+        'This company is on the Free Plan and cannot receive direct buyer enquiries yet. Direct enquiries are enabled on the Pro Plan and Ad Plan.',
+        403,
+        'ENQUIRIES_DISABLED_ON_FREE_PLAN'
+      );
     }
 
     if (input.productId) {
@@ -43,6 +57,7 @@ export class InquiriesService {
           companyId: input.companyId,
           productId: input.productId || null,
           message: input.message,
+          status: 'UNREAD_BY_COMPANY',
           messages: {
             create: {
               senderId: userId,
@@ -272,7 +287,63 @@ export class InquiriesService {
       throw new AppError('Forbidden: You do not have permission to access this inquiry conversation.', 403, 'FORBIDDEN');
     }
 
+    // Mark as read for the viewing party
+    if (isSupplier && (inquiry.status === 'UNREAD_FOR_COMPANY' || inquiry.status === 'UNREAD_BY_COMPANY' || inquiry.status === 'OPEN')) {
+      await prisma.inquiry.update({
+        where: { id: inquiryId },
+        data: { status: 'READ' },
+      });
+      inquiry.status = 'READ';
+    } else if (isBuyer && (inquiry.status === 'UNREAD_FOR_USER' || inquiry.status === 'UNREAD_BY_USER')) {
+      await prisma.inquiry.update({
+        where: { id: inquiryId },
+        data: { status: 'READ' },
+      });
+      inquiry.status = 'READ';
+    }
+
     return { data: inquiry };
+  }
+
+  /**
+   * Explicitly marks an inquiry as read by the viewing user / company.
+   */
+  async markAsRead(user: AuthUser, inquiryId: string) {
+    const inquiry = await prisma.inquiry.findUnique({
+      where: { id: inquiryId },
+      select: {
+        id: true,
+        userId: true,
+        companyId: true,
+        status: true,
+        company: { select: { userId: true } },
+      },
+    });
+
+    if (!inquiry) {
+      throw new AppError('Inquiry not found.', 404, 'NOT_FOUND');
+    }
+
+    const isBuyer = inquiry.userId === user.id;
+    const isSupplier = inquiry.company.userId === user.id || (user.companyId && inquiry.companyId === user.companyId);
+
+    if (!isBuyer && !isSupplier) {
+      throw new AppError('Forbidden: Access denied to this inquiry.', 403, 'FORBIDDEN');
+    }
+
+    if (isSupplier && (inquiry.status === 'UNREAD_FOR_COMPANY' || inquiry.status === 'UNREAD_BY_COMPANY' || inquiry.status === 'OPEN')) {
+      await prisma.inquiry.update({
+        where: { id: inquiryId },
+        data: { status: 'READ' },
+      });
+    } else if (isBuyer && (inquiry.status === 'UNREAD_FOR_USER' || inquiry.status === 'UNREAD_BY_USER')) {
+      await prisma.inquiry.update({
+        where: { id: inquiryId },
+        data: { status: 'READ' },
+      });
+    }
+
+    return { success: true, inquiryId };
   }
 
   /**
@@ -304,6 +375,8 @@ export class InquiriesService {
       throw new AppError('Forbidden: You do not have permission to send messages in this inquiry.', 403, 'FORBIDDEN');
     }
 
+    const nextStatus = isBuyer ? 'UNREAD_FOR_COMPANY' : 'UNREAD_FOR_USER';
+
     const message = await prisma.$transaction(async (tx) => {
       const createdMessage = await tx.inquiryMessage.create({
         data: {
@@ -322,10 +395,13 @@ export class InquiriesService {
         },
       });
 
-      // Update inquiry updatedAt timestamp
+      // Update inquiry updatedAt timestamp and status
       await tx.inquiry.update({
         where: { id: inquiryId },
-        data: { updatedAt: new Date() },
+        data: {
+          updatedAt: new Date(),
+          status: nextStatus,
+        },
       });
 
       return createdMessage;
@@ -342,6 +418,58 @@ export class InquiriesService {
       data: message,
       message: 'Message sent successfully.',
     };
+  }
+
+  /**
+   * Returns count of unread incoming inquiries for the authenticated user / company.
+   */
+  async getUnreadCount(user: AuthUser) {
+    let unreadCount = 0;
+
+    // 1. Inquiries received as a company
+    if (user.companyId && user.role === 'COMPANY') {
+      const companyInquiries = await prisma.inquiry.findMany({
+        where: {
+          companyId: user.companyId,
+          status: { in: ['UNREAD_FOR_COMPANY', 'UNREAD_BY_COMPANY'] },
+        },
+        select: {
+          id: true,
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { senderId: true },
+          },
+        },
+      });
+
+      // Filter out any where user was the sender
+      unreadCount += companyInquiries.filter(
+        (inq) => inq.messages.length > 0 && inq.messages[0].senderId !== user.id
+      ).length;
+    }
+
+    // 2. Inquiries sent as a buyer/user
+    const userInquiries = await prisma.inquiry.findMany({
+      where: {
+        userId: user.id,
+        status: { in: ['UNREAD_FOR_USER', 'UNREAD_BY_USER'] },
+      },
+      select: {
+        id: true,
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { senderId: true },
+        },
+      },
+    });
+
+    unreadCount += userInquiries.filter(
+      (inq) => inq.messages.length > 0 && inq.messages[0].senderId !== user.id
+    ).length;
+
+    return { unreadCount };
   }
 }
 

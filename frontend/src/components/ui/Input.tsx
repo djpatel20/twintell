@@ -49,7 +49,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             className={twMerge(
               clsx(
                 // Height 40, 8px radius, bg-panel-sunk, no border at rest, --line + 3px cobalt-soft ring on focus per DESIGN.md §7
-                'w-full h-10 rounded-lg bg-panel-sunk border border-transparent px-3 text-sm text-ink placeholder:text-ink-faint transition-all duration-120 outline-none',
+                'w-full h-10 rounded-lg bg-panel-sunk border border-transparent px-3 text-sm text-slate-900 font-medium placeholder:text-slate-400 transition-all duration-120 outline-none',
                 'focus:border-line focus:ring-[3px] focus:ring-cobalt-soft focus:bg-panel',
                 leftIcon ? 'pl-9' : '',
                 rightIcon || shortcutHint ? 'pr-14' : '',

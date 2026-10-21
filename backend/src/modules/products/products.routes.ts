@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { productsController } from './products.controller';
-import { requireAuth, onlyCompany } from '../../middleware/auth';
+import { requireAuth, onlyCompany, requireCompanyOrAdmin } from '../../middleware/auth';
 import { checkProductLimit } from '../../middleware/check-limit';
 
 const router = Router();
@@ -25,8 +25,8 @@ router.patch('/:id', requireAuth, onlyCompany, (req, res, next) => {
   productsController.updateProduct(req, res, next);
 });
 
-// DELETE /api/products/:id — Company owner only
-router.delete('/:id', requireAuth, onlyCompany, (req, res, next) => {
+// DELETE /api/products/:id — Company owner or Admin
+router.delete('/:id', requireAuth, requireCompanyOrAdmin, (req, res, next) => {
   productsController.deleteProduct(req, res, next);
 });
 

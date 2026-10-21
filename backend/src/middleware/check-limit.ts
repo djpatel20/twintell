@@ -27,7 +27,16 @@ export async function checkPostLimit(req: Request, res: Response, next: NextFunc
     const limit = subscription.plan.postsPerMonth;
 
     // 2. Count posts created within the current period
-    const periodStart = subscription.currentPeriodStart || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    let periodStart = subscription.currentPeriodStart;
+    const isMonthlyPlan = subscription.plan.code === 'PRO';
+
+    if (isMonthlyPlan) {
+      // Pro plan: 10 posts every month
+      periodStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    } else if (!periodStart) {
+      // Free plan: 3 posts per year
+      periodStart = new Date(new Date().getFullYear(), 0, 1);
+    }
 
     const postCount = await prisma.post.count({
       where: {
@@ -37,9 +46,10 @@ export async function checkPostLimit(req: Request, res: Response, next: NextFunc
     });
 
     if (postCount >= limit) {
+      const periodLabel = isMonthlyPlan ? 'Monthly' : 'Annual';
       return next(
         new AppError(
-          `Monthly post limit of ${limit} reached for your ${subscription.plan.name} plan. Upgrade to unlock more posts.`,
+          `${periodLabel} post limit of ${limit} reached for your ${subscription.plan.name}. Upgrade to unlock more business updates.`,
           403,
           'PLAN_LIMIT_REACHED'
         )

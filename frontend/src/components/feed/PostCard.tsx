@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from '../../context/ToastContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api-client';
 import { CompanyLogo } from '../ui/CompanyLogo';
@@ -81,6 +82,8 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const isOwner = company?.id === post.companyId;
+  const isAdmin = user?.role === 'ADMIN';
+  const canDelete = isOwner || isAdmin;
 
   // 3px category-colored left stripe color prioritizing unified category
   const displayCategorySlug = post.category?.slug || post.company?.category?.slug;
@@ -125,10 +128,11 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
 
     try {
       await api.delete(`/api/posts/${post.id}`);
+      toast.success('Post deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       if (onPostDeleted) onPostDeleted();
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete post.');
+      toast.error('Failed to delete post', err?.message);
       setIsDeleting(false);
     }
   };
@@ -138,9 +142,10 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
       const shareUrl = `${window.location.origin}/posts/${post.id}`;
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      toast.info('Post link copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
+      toast.error('Could not copy link to clipboard');
     }
   };
 
@@ -207,7 +212,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
             className="hidden sm:inline-flex"
           />
 
-          {isOwner && (
+          {canDelete && (
             <div className="relative">
               <button
                 type="button"
@@ -220,7 +225,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
               </button>
 
               {showMenu && (
-                <div className="absolute right-0 mt-1 w-32 bg-panel rounded-lg elevation-floating border border-line py-1 z-20">
+                <div className="absolute right-0 mt-1 w-36 bg-panel rounded-lg elevation-floating border border-line py-1 z-20">
                   <button
                     type="button"
                     onClick={() => {
@@ -230,8 +235,14 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
                     disabled={isDeleting}
                     className="w-full px-3 py-1.5 text-xs text-red hover:bg-red/10 flex items-center gap-2 transition-colors font-medium text-left"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>{isDeleting ? 'Deleting...' : 'Delete post'}</span>
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      {isDeleting
+                        ? 'Deleting...'
+                        : isAdmin && !isOwner
+                        ? 'Delete (Admin)'
+                        : 'Delete post'}
+                    </span>
                   </button>
                 </div>
               )}

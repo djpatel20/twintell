@@ -34,20 +34,10 @@ export class CompanyService {
       };
     }
 
-    // 3. Cursor pagination
-    if (cursor) {
-      const cursorDate = new Date(cursor);
-      if (!isNaN(cursorDate.getTime())) {
-        where.createdAt = {
-          lt: cursorDate,
-        };
-      }
-    }
-
-    // 4. Query with limit + 1
-    const companies = await prisma.company.findMany({
+    // 3. Cursor pagination & deterministic sorting
+    const findArgs: Prisma.CompanyFindManyArgs = {
       where,
-      orderBy: [{ verified: 'desc' }, { followerCount: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ verified: 'desc' }, { followerCount: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       take: limit + 1,
       include: {
         category: {
@@ -66,11 +56,29 @@ export class CompanyService {
           },
         },
       },
-    });
+    };
+
+    if (cursor) {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cursor);
+      if (isUuid) {
+        findArgs.cursor = { id: cursor };
+        findArgs.skip = 1;
+      } else {
+        const cursorDate = new Date(cursor);
+        if (!isNaN(cursorDate.getTime())) {
+          where.createdAt = {
+            lt: cursorDate,
+          };
+        }
+      }
+    }
+
+    // 4. Query with limit + 1
+    const companies = await prisma.company.findMany(findArgs);
 
     const hasMore = companies.length > limit;
     const items = hasMore ? companies.slice(0, limit) : companies;
-    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].createdAt.toISOString() : null;
+    const nextCursor = hasMore && items.length > 0 ? items[items.length - 1].id : null;
 
     // 5. Batch resolve isFollowing to avoid N+1 query problem
     let followingIds = new Set<string>();
@@ -159,6 +167,16 @@ export class CompanyService {
             products: true,
             posts: true,
             followers: true,
+          },
+        },
+        subscription: {
+          select: {
+            plan: {
+              select: {
+                code: true,
+                name: true,
+              },
+            },
           },
         },
       },

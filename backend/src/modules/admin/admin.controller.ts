@@ -108,3 +108,50 @@ export async function promoteUserHandler(req: Request, res: Response, next: Next
     next(error);
   }
 }
+
+// Moderation
+export async function getModerationPostsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 15;
+    const search = req.query.search as string | undefined;
+
+    const result = await adminService.getAdminPosts({ page, limit, search });
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteModerationPostHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const postId = req.params.id;
+    const result = await adminService.deleteAdminPost(postId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getModerationProductsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 15;
+    const search = req.query.search as string | undefined;
+
+    const result = await adminService.getAdminProducts({ page, limit, search });
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteModerationProductHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const productId = req.params.id;
+    const result = await adminService.deleteAdminProduct(productId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+}

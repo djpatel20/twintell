@@ -37,4 +37,10 @@ router.post('/ads', requireAuth, requireAdmin, adminController.createAdHandler);
 router.patch('/ads/:id', requireAuth, requireAdmin, adminController.updateAdHandler);
 router.delete('/ads/:id', requireAuth, requireAdmin, adminController.deleteAdHandler);
 
+// 5. Content Moderation (Posts & Products)
+router.get('/moderation/posts', requireAuth, requireAdmin, adminController.getModerationPostsHandler);
+router.delete('/moderation/posts/:id', requireAuth, requireAdmin, adminController.deleteModerationPostHandler);
+router.get('/moderation/products', requireAuth, requireAdmin, adminController.getModerationProductsHandler);
+router.delete('/moderation/products/:id', requireAuth, requireAdmin, adminController.deleteModerationProductHandler);
+
 export default router;

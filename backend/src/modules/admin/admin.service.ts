@@ -271,6 +271,41 @@ export async function getAdminAds(params?: { status?: string }) {
 }
 
 export async function createAdminAd(input: CreateAdInput) {
+  if (input.companyId) {
+    const company = await prisma.company.findUnique({
+      where: { id: input.companyId },
+      include: { subscription: { include: { plan: true } } },
+    });
+
+    if (company) {
+      const planCode = company.subscription?.plan?.code;
+      if (planCode !== 'ADVERTISING') {
+        throw new AppError(
+          `Ad campaigns are restricted to companies on the Ad Plan. ${company.name} is currently on ${company.subscription?.plan?.name || 'Free Plan'}.`,
+          403,
+          'PLAN_RESTRICTION'
+        );
+      }
+
+      // Enforce 12 ad campaigns per year
+      const periodStart = company.subscription?.currentPeriodStart || new Date(new Date().getFullYear(), 0, 1);
+      const campaignCount = await prisma.sponsoredAd.count({
+        where: {
+          companyId: input.companyId,
+          createdAt: { gte: periodStart },
+        },
+      });
+
+      if (campaignCount >= 12) {
+        throw new AppError(
+          `Annual ad campaign limit of 12 reached for ${company.name}.`,
+          403,
+          'AD_CAMPAIGN_LIMIT_REACHED'
+        );
+      }
+    }
+  }
+
   const endDate = new Date(Date.now() + input.durationDays * 86400 * 1000);
 
   const ad = await prisma.sponsoredAd.create({
@@ -332,6 +367,104 @@ export async function deleteAdminAd(adId: string) {
   });
 
   return { message: 'Sponsored ad successfully deleted' };
+}
+
+// ---------- Content Moderation (Posts & Products) ----------
+
+export async function getAdminPosts(params: { page?: number; limit?: number; search?: string }) {
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.min(50, Math.max(1, params.limit || 15));
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (params.search) {
+    where.OR = [
+      { content: { contains: params.search, mode: 'insensitive' } },
+      { company: { name: { contains: params.search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [total, posts] = await Promise.all([
+    prisma.post.count({ where }),
+    prisma.post.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        company: {
+          select: { id: true, name: true, slug: true, logoUrl: true },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    data: posts,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+export async function deleteAdminPost(postId: string) {
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) throw new AppError('Post not found', 404, 'NOT_FOUND');
+  await prisma.post.delete({ where: { id: postId } });
+  return { message: 'Post successfully removed by administrator.' };
+}
+
+export async function getAdminProducts(params: { page?: number; limit?: number; search?: string }) {
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.min(50, Math.max(1, params.limit || 15));
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (params.search) {
+    where.OR = [
+      { title: { contains: params.search, mode: 'insensitive' } },
+      { description: { contains: params.search, mode: 'insensitive' } },
+      { company: { name: { contains: params.search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [total, products] = await Promise.all([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        company: {
+          select: { id: true, name: true, slug: true, logoUrl: true },
+        },
+        category: {
+          select: { id: true, name: true },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    data: products,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
+export async function deleteAdminProduct(productId: string) {
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) throw new AppError('Product not found', 404, 'NOT_FOUND');
+  await prisma.product.delete({ where: { id: productId } });
+  return { message: 'Product successfully removed by administrator.' };
 }
 
 // ---------- Promote User to Admin ----------

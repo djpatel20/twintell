@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api-client';
+import { toast } from '../../context/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Category, Product } from '../../types';
@@ -180,10 +181,17 @@ export function AddEditProductModal({
         await queryClient.invalidateQueries({ queryKey: ['product', product.id] });
       }
 
+      toast.success(
+        isEditing ? 'Product Updated' : 'Product Published',
+        isEditing ? 'Product changes saved successfully.' : 'New product listed in catalog.'
+      );
+
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to save product. Please check your inputs.');
+      const msg = err?.message || 'Failed to save product. Please check your inputs.';
+      setErrorMsg(msg);
+      toast.error('Save Failed', msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -407,37 +415,6 @@ export function AddEditProductModal({
                 >
                   {isUploading ? 'Uploading...' : 'Upload Photos'}
                 </Button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowUrlInput(!showUrlInput)}
-                  className="text-xs text-slate-500 hover:text-primary-600 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1 font-semibold"
-                >
-                  <Plus className="w-3 h-3" />
-                  <span>Link URL</span>
-                </button>
-              </div>
-            )}
-
-            {showUrlInput && (
-              <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
-                <input
-                  type="url"
-                  value={imageUrlInput}
-                  onChange={(e) => setImageUrlInput(e.target.value)}
-                  placeholder="Paste direct image link: https://..."
-                  className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-primary-500"
-                />
-                <Button size="sm" type="button" onClick={handleAddImageUrl}>
-                  Add
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setShowUrlInput(false)}
-                  className="text-xs text-slate-400 hover:text-slate-600 px-1"
-                >
-                  Cancel
-                </button>
               </div>
             )}
           </div>

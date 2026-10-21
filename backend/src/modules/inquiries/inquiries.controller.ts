@@ -77,6 +77,37 @@ export class InquiriesController {
     }
   }
 
+  async getUnreadCount(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new AppError('Authentication required to view unread message count.', 401, 'UNAUTHORIZED');
+      }
+
+      const result = await inquiriesService.getUnreadCount(req.user);
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async markAsRead(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.user) {
+        throw new AppError('Authentication required.', 401, 'UNAUTHORIZED');
+      }
+
+      const inquiryId = req.params.id;
+      if (!inquiryId) {
+        throw new AppError('Inquiry ID is required.', 400, 'BAD_REQUEST');
+      }
+
+      const result = await inquiriesService.markAsRead(req.user, inquiryId);
+      return res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Alias for backward compatibility
   async getCompanyInquiries(req: Request, res: Response, next: NextFunction) {
     return this.getInquiries(req, res, next);

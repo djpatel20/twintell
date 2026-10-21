@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api-client';
 import { useAuth } from '../../../context/AuthContext';
+import { toast } from '../../../context/ToastContext';
 import { AppShell } from '../../../components/layout/AppShell';
 import { Avatar } from '../../../components/ui/Avatar';
 import { VerifiedBadge, Badge } from '../../../components/ui/Badge';
@@ -58,7 +59,10 @@ export default function ProductDetailPage() {
 
   const product = productData?.data;
   const isOwner = currentCompany?.id === product?.companyId;
+  const isAdmin = user?.role === 'ADMIN';
+  const canDelete = isOwner || isAdmin;
   const company = product?.company;
+  const isCompanyOnFreePlan = (company as any)?.subscription?.plan?.code === 'FREE';
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this product?')) return;
@@ -66,11 +70,12 @@ export default function ProductDetailPage() {
 
     try {
       await api.delete(`/api/products/${id}`);
+      toast.success('Product deleted successfully');
       await queryClient.invalidateQueries({ queryKey: ['products'] });
       await queryClient.invalidateQueries({ queryKey: ['company-products'] });
       router.push(company ? `/companies/${company.slug}` : '/directory');
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete product.');
+      toast.error('Failed to delete product', err?.message);
       setIsDeleting(false);
     }
   };
@@ -89,16 +94,18 @@ export default function ProductDetailPage() {
             <span>Back</span>
           </button>
 
-          {isOwner && (
+          {canDelete && (
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsEditOpen(true)}
-                leftIcon={<Edit3 className="w-3.5 h-3.5" />}
-              >
-                Edit Product
-              </Button>
+              {isOwner && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditOpen(true)}
+                  leftIcon={<Edit3 className="w-3.5 h-3.5" />}
+                >
+                  Edit Product
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="outline"
@@ -107,7 +114,7 @@ export default function ProductDetailPage() {
                 className="text-rose-600 border-rose-200 hover:bg-rose-50"
                 leftIcon={<Trash2 className="w-3.5 h-3.5" />}
               >
-                Delete
+                {isAdmin && !isOwner ? 'Delete (Admin)' : 'Delete'}
               </Button>
             </div>
           )}
@@ -243,7 +250,6 @@ export default function ProductDetailPage() {
                   </div>
                 </div>
 
-                {/* Primary CTA: Contact Supplier vs Owner Manage */}
                 <div className="space-y-2 pt-4 border-t border-slate-100">
                   {isOwner ? (
                     <>
@@ -256,10 +262,34 @@ export default function ProductDetailPage() {
                       >
                         Manage & Edit Product
                       </Button>
-                      <p className="text-center text-[11px] text-slate-400">
-                        You are viewing this product listing as the seller.
-                      </p>
+                      {isCompanyOnFreePlan ? (
+                        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-center space-y-1">
+                          <p className="text-xs font-semibold text-amber-800">
+                            Free Plan: Buyer enquiries are disabled.
+                          </p>
+                          <Link href="/pricing" className="text-xs font-bold text-primary-600 hover:underline">
+                            Upgrade to Pro Plan (₹1,999/yr) to receive buyer enquiries →
+                          </Link>
+                        </div>
+                      ) : (
+                        <p className="text-center text-[11px] text-slate-400">
+                          You are viewing this product listing as the seller.
+                        </p>
+                      )}
                     </>
+                  ) : isCompanyOnFreePlan ? (
+                    <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-center space-y-2">
+                      <p className="text-xs font-semibold text-amber-800">
+                        Direct buyer enquiries are unavailable for this supplier on the Free Plan.
+                      </p>
+                      {company && (
+                        <Link href={`/companies/${company.slug}`}>
+                          <Button size="sm" variant="outline" className="w-full text-xs font-bold border-amber-300 text-amber-800 hover:bg-amber-100">
+                            Visit Company Profile
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
                   ) : (
                     <>
                       <Button

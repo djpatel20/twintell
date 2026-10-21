@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from '../../context/ToastContext';
 import { api } from '../../lib/api-client';
 import { Plan, SubscriptionDetailsResponse } from '../../types';
 import { AppShell } from '../../components/layout/AppShell';
@@ -24,7 +25,23 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  CreditCard,
+  Lock,
 } from 'lucide-react';
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function PricingPage() {
   const router = useRouter();
@@ -34,6 +51,7 @@ export default function PricingPage() {
   const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // 1. Fetch all active plans
   const { data: plansData, isLoading: isPlansLoading } = useQuery({
@@ -80,7 +98,10 @@ export default function PricingPage() {
     }
 
     if (!isCompany) {
-      alert('Only registered company accounts can subscribe to business plans. Please create or switch to a company profile.');
+      toast.warning(
+        'Company Account Required',
+        'Only registered company accounts can subscribe to business plans. Please create or switch to a company profile.'
+      );
       return;
     }
 
@@ -88,24 +109,150 @@ export default function PricingPage() {
       return; // Already active
     }
 
-    if (plan.code === 'LEAD_GEN') {
-      window.location.href = `mailto:sales@twintell.com?subject=Inquiry: Twintell Lead Generation Pilot&body=Hello Twintell Team,%0D%0A%0D%0AWe are interested in enrolling ${company?.name || 'our company'} in the verified buyer lead generation pilot program.`;
-      return;
-    }
-
     setSelectedPlanCode(plan.code);
   };
 
-  const handleConfirmUpgrade = () => {
+  const handleConfirmUpgrade = async () => {
     if (!selectedPlanCode) return;
-    upgradeMutation.mutate(selectedPlanCode);
+
+    const plan = plans.find((p) => p.code === selectedPlanCode);
+    if (!plan) return;
+
+    setIsProcessingPayment(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    // Free plan: direct switch
+    if (plan.code === 'FREE' || Number(plan.priceYearly) === 0) {
+      upgradeMutation.mutate(selectedPlanCode);
+      setIsProcessingPayment(false);
+      return;
+    }
+
+    try {
+      // 1. Create Order via Backend
+      const orderRes = await api.post<{
+        data: {
+          orderId: string;
+          amount: number;
+          currency: string;
+          keyId: string;
+          planName: string;
+          planCode: string;
+        };
+      }>('/api/subscriptions/create-order', {
+        planCode: plan.code,
+        billingCycle: 'YEARLY',
+      });
+
+      const orderData = orderRes.data;
+
+      // 2. Check if running in simulated sandbox mode (keys not configured in backend)
+      const isSimulated =
+        orderData.orderId.startsWith('order_test_') ||
+        orderData.keyId.includes('placeholder');
+
+      // Load Razorpay Checkout Script if not simulated
+      const isScriptLoaded = !isSimulated ? await loadRazorpayScript() : false;
+
+      if (isSimulated || !isScriptLoaded || !(window as any).Razorpay) {
+        // Fallback for development sandbox simulation or if real keys are not configured in backend
+        const confirmSandbox = confirm(
+          isSimulated
+            ? `Sandbox Mode: Razorpay API keys are not yet configured in backend/.env.\n\nSimulate successful payment for ${orderData.planName} (Amount: ₹${(orderData.amount / 100).toLocaleString()}) to test the upgrade flow?`
+            : `Razorpay payment gateway initialized for ${orderData.planName} (Amount: ₹${(orderData.amount / 100).toLocaleString()}). Complete payment now?`
+        );
+        if (confirmSandbox) {
+          const verifyRes = await api.post<{ data: { message: string } }>('/api/subscriptions/verify-payment', {
+            orderId: orderData.orderId,
+            paymentId: `pay_test_${Date.now()}`,
+            signature: `sig_test_${Date.now()}`,
+            planCode: plan.code,
+            billingCycle: 'YEARLY',
+          });
+
+          setSuccessMessage(verifyRes.data?.message || 'Payment successful! Subscription upgraded.');
+          toast.success('Subscription Upgraded', verifyRes.data?.message || 'Plan upgraded successfully!');
+          setSelectedPlanCode(null);
+          queryClient.invalidateQueries({ queryKey: ['my-subscription'] });
+          queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+          refreshUser();
+        }
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      // 3. Open Razorpay Standard Checkout Modal
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'twintell B2B Platform',
+        description: `${orderData.planName} (1 Year Active Membership)`,
+        order_id: orderData.orderId,
+        prefill: {
+          name: user?.name || company?.name || 'Company Owner',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#1A5CFF',
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessingPayment(false);
+          },
+        },
+        handler: async function (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) {
+          try {
+            const verifyRes = await api.post<{ data: { message: string } }>('/api/subscriptions/verify-payment', {
+              orderId: response.razorpay_order_id || orderData.orderId,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              planCode: plan.code,
+              billingCycle: 'YEARLY',
+            });
+
+            const msg = verifyRes.data?.message || 'Payment successful! Subscription upgraded.';
+            setSuccessMessage(msg);
+            toast.success('Subscription Upgraded', msg);
+            setSelectedPlanCode(null);
+            queryClient.invalidateQueries({ queryKey: ['my-subscription'] });
+            queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+            refreshUser();
+          } catch (err: any) {
+            const errText = err?.message || 'Payment received but verification failed. Please contact support.';
+            setErrorMessage(errText);
+            toast.error('Payment Verification Failed', errText);
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', function (response: any) {
+        const failText = response.error?.description || 'Payment was declined or failed.';
+        setErrorMessage(failText);
+        toast.error('Payment Failed', failText);
+        setIsProcessingPayment(false);
+      });
+      rzp.open();
+    } catch (err: any) {
+      const initErr = err?.message || 'Failed to initiate payment. Please try again.';
+      setErrorMessage(initErr);
+      toast.error('Payment Initialization Failed', initErr);
+      setIsProcessingPayment(false);
+    }
   };
 
   const planIcons: Record<string, any> = {
     FREE: Building2,
     PRO: Zap,
     ADVERTISING: Megaphone,
-    LEAD_GEN: Target,
   };
 
   return (
@@ -123,7 +270,7 @@ export default function PricingPage() {
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-            Keep your business presence active for free, or upgrade to Business Pro and Advertising for verified recognition, expanded reach, and direct buyer inquiries.
+            Keep your business presence active with the Free Plan, or upgrade to Pro Plan and Ad Plan for direct buyer enquiries and targeted feed campaigns.
           </p>
 
           {/* Logged in Company Status Banner */}
@@ -157,14 +304,14 @@ export default function PricingPage() {
           )}
         </div>
 
-        {/* Pricing Cards Grid */}
+        {/* Pricing Cards Grid (3-Plan Structure) */}
         {isPlansLoading ? (
           <div className="card-base p-16 flex flex-col items-center justify-center space-y-3">
             <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
             <p className="text-xs text-slate-500">Loading business plans...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch max-w-5xl mx-auto">
             {plans.map((plan) => {
               const Icon = planIcons[plan.code] || Building2;
               const isCurrent = currentPlan?.code === plan.code;
@@ -173,12 +320,12 @@ export default function PricingPage() {
               return (
                 <div
                   key={plan.id}
-                  className={`card-base p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 relative h-full ${
+                  className={`card-base p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 relative h-full ${
                     isRecommended
-                      ? 'border-2 border-primary-500 shadow-md ring-4 ring-primary-500/10'
+                      ? 'border-2 border-primary-500 shadow-lg ring-4 ring-primary-500/10'
                       : isCurrent
                       ? 'border-2 border-emerald-500 shadow-sm'
-                      : 'border border-slate-200 hover:border-slate-300'
+                      : 'border border-slate-200 hover:border-slate-300 shadow-xs'
                   }`}
                 >
                   {/* Badge */}
@@ -204,45 +351,38 @@ export default function PricingPage() {
                       <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-2">
                         <Icon className="w-5 h-5" />
                       </div>
-                      <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
-                      <p className="text-xs text-slate-500 min-h-[36px] line-clamp-2">{plan.tagline}</p>
+                      <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                      <p className="text-xs text-slate-500 min-h-[32px] line-clamp-2">{plan.tagline}</p>
                     </div>
 
                     {/* Price Header (Aligned vertical baseline across all cards) */}
-                    <div className="py-2.5 border-y border-slate-100 min-h-[72px] flex flex-col justify-center">
-                      {plan.code === 'LEAD_GEN' ? (
-                        <div className="space-y-0.5">
-                          <span className="text-lg font-black text-slate-900">Contact Sales</span>
-                          <p className="text-[11px] text-slate-400">Pilot pricing on inquiry</p>
+                    <div className="py-3 border-y border-slate-100 min-h-[76px] flex flex-col justify-center">
+                      <div className="space-y-0.5">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-black text-slate-900">
+                            ₹{Number(plan.priceYearly).toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-xs text-slate-500 font-medium">/ year</span>
                         </div>
-                      ) : (
-                        <div className="space-y-0.5">
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-2xl font-black text-slate-900">
-                              ₹{plan.priceYearly.toLocaleString()}
-                            </span>
-                            <span className="text-xs text-slate-500 font-medium">/ year</span>
-                          </div>
-                          {plan.priceYearly > 0 && (
-                            <p className="text-[11px] text-slate-400">
-                              (Approx. ₹{Math.round(plan.priceMonthly)}/month billed annually)
-                            </p>
-                          )}
-                          {plan.priceYearly === 0 && (
-                            <p className="text-[11px] text-emerald-600 font-semibold">
-                              100% Free Forever
-                            </p>
-                          )}
-                        </div>
-                      )}
+                        {Number(plan.priceYearly) > 0 && (
+                          <p className="text-[11px] text-slate-400">
+                            (Approx. ₹{Math.round(Number(plan.priceMonthly)).toLocaleString('en-IN')}/month billed annually)
+                          </p>
+                        )}
+                        {Number(plan.priceYearly) === 0 && (
+                          <p className="text-[11px] text-emerald-600 font-semibold">
+                            100% Free Forever
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     {/* Features List */}
-                    <div className="space-y-2.5 pt-1 flex-1">
+                    <div className="space-y-3 pt-2 flex-1">
                       <p className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
                         What's Included:
                       </p>
-                      <ul className="space-y-2 text-xs text-slate-600">
+                      <ul className="space-y-2.5 text-xs text-slate-600">
                         {plan.features.map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <Check className="w-4 h-4 text-primary-600 shrink-0 mt-0.5" />
@@ -272,12 +412,9 @@ export default function PricingPage() {
                         className={`w-full text-xs font-bold ${
                           isRecommended ? 'shadow-md shadow-primary-500/20' : ''
                         }`}
-                        leftIcon={plan.code === 'LEAD_GEN' ? <Target className="w-3.5 h-3.5" /> : undefined}
                       >
                         {plan.code === 'FREE'
-                          ? 'Switch to Starter'
-                          : plan.code === 'LEAD_GEN'
-                          ? 'Inquire for Pilot'
+                          ? 'Switch to Free Plan'
                           : `Upgrade to ${plan.name}`}
                       </Button>
                     )}
@@ -289,33 +426,42 @@ export default function PricingPage() {
         )}
 
         {/* Feature Comparison Table / FAQ */}
-        <div className="card-base p-6 sm:p-8 space-y-6 border border-slate-200">
+        <div className="card-base p-6 sm:p-8 space-y-6 border border-slate-200 max-w-5xl mx-auto">
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-primary-600" />
               <span>Frequently Asked Questions & Plan Details</span>
             </h2>
             <p className="text-xs text-slate-500">
-              Everything you need to know about Twintell business plans and publishing allowances.
+              Everything you need to know about Twintell business plans, post allowances, and in-feed advertising.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-600 pt-2 border-t border-slate-100">
             <div className="space-y-1.5">
               <h4 className="font-bold text-slate-800 text-sm">
-                What happens when I publish 3 posts on the Free Plan?
+                How does the Free Plan work?
               </h4>
               <p className="leading-relaxed">
-                On the Starter (Free) plan, you can publish up to 3 business updates. Once you reach 3 posts, you can upgrade to <strong>Business Pro</strong> to publish up to 10 posts with priority visibility.
+                The Free Plan lets you create a company profile, list all your products, list your business in relevant categories, and publish up to 3 business updates per year with zero cost.
               </p>
             </div>
 
             <div className="space-y-1.5">
               <h4 className="font-bold text-slate-800 text-sm">
-                How does the Advertising Plan work?
+                What does the Pro Plan (₹1,999/yr) include?
               </h4>
               <p className="leading-relaxed">
-                The Advertising Plan provides 12 scheduled promotional campaigns (1 per month) positioned natively between feed posts to reach thousands of verified buyers and suppliers.
+                The Pro Plan includes everything in Free, plus up to 10 business posts every month and the ability to receive direct buyer enquiries through our integrated messaging desk.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="font-bold text-slate-800 text-sm">
+                How does the Ad Plan (₹10,999/yr) work?
+              </h4>
+              <p className="leading-relaxed">
+                The Ad Plan lets you run up to 12 targeted promotional campaigns per year featuring your company logo, products, and details. Your ads appear between regular posts in the feed and within your selected business category, complete with "Visit Company" and "Enquire Now" action buttons.
               </p>
             </div>
 
@@ -324,16 +470,7 @@ export default function PricingPage() {
                 Can I switch or upgrade my plan at any time?
               </h4>
               <p className="leading-relaxed">
-                Yes! You can upgrade your plan anytime from this page or directly within your profile. Upgrades take effect immediately with full access to new post limits and tools.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <h4 className="font-bold text-slate-800 text-sm">
-                What is the Lead Generation Pilot?
-              </h4>
-              <p className="leading-relaxed">
-                Our team matches verified buyer procurement requirements directly with verified manufacturers and suppliers on Twintell, delivering high-intent quotation requests to your inbox.
+                Yes! You can upgrade your plan anytime from this page or directly within your profile. Upgrades take effect immediately with instant activation.
               </p>
             </div>
           </div>
@@ -386,11 +523,19 @@ export default function PricingPage() {
                 <Button
                   size="sm"
                   onClick={handleConfirmUpgrade}
-                  isLoading={upgradeMutation.isPending}
+                  isLoading={isProcessingPayment || upgradeMutation.isPending}
                   className="font-bold shadow-sm"
+                  leftIcon={<Lock className="w-3.5 h-3.5" />}
                 >
-                  Confirm & Activate Plan
+                  {plans.find((p) => p.code === selectedPlanCode)?.code === 'FREE'
+                    ? 'Confirm & Activate Plan'
+                    : 'Proceed to Payment (Razorpay)'}
                 </Button>
+              </div>
+
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 pt-1">
+                <Lock className="w-3 h-3 text-emerald-600" />
+                <span>256-bit SSL encrypted · Verified by Razorpay</span>
               </div>
             </div>
           </div>

@@ -38,12 +38,12 @@ export class PostsController {
 
   async deletePost(req: Request, res: Response, next: NextFunction) {
     try {
-      if (!req.user || req.user.role !== 'COMPANY' || !req.user.companyId) {
-        throw new AppError('Forbidden: Only companies can delete their posts.', 403, 'FORBIDDEN');
+      if (!req.user) {
+        throw new AppError('Authentication required.', 401, 'UNAUTHORIZED');
       }
 
       const { id } = postIdParamSchema.parse(req.params);
-      const result = await postsService.deletePost(id, req.user.companyId);
+      const result = await postsService.deletePost(id, req.user);
 
       return res.status(200).json(result);
     } catch (error) {

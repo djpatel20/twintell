@@ -3,6 +3,7 @@ import { CreatePostInput, CreateCommentInput } from './posts.schema';
 import { AppError } from '../../middleware/error-handler';
 import { Prisma } from '@prisma/client';
 import { notificationsService } from '../notifications/notifications.service';
+import { AuthUser } from '../../middleware/auth';
 
 export class PostsService {
   /**
@@ -115,9 +116,9 @@ export class PostsService {
   }
 
   /**
-   * Deletes a post belonging to the authenticated company.
+   * Deletes a post belonging to the authenticated company, or any post if admin.
    */
-  async deletePost(postId: string, companyId: string) {
+  async deletePost(postId: string, user: AuthUser) {
     const post = await prisma.post.findUnique({
       where: { id: postId },
     });
@@ -126,7 +127,7 @@ export class PostsService {
       throw new AppError('Post not found.', 404, 'NOT_FOUND');
     }
 
-    if (post.companyId !== companyId) {
+    if (user.role !== 'ADMIN' && post.companyId !== user.companyId) {
       throw new AppError('You can only delete posts published by your own company.', 403, 'FORBIDDEN');
     }
 

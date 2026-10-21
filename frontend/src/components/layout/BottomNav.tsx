@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Home, Compass, Plus, MessageSquare, User as UserIcon } from 'lucide-react';
 import { clsx } from 'clsx';
 import { User } from '../../types';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface BottomNavProps {
   user?: User | null;
@@ -16,6 +17,7 @@ interface BottomNavProps {
 export function BottomNav({ user, isLoading, onNewPostClick }: BottomNavProps) {
   const pathname = usePathname();
   const isCompany = user?.role === 'COMPANY';
+  const { unreadMessagesCount } = useNotifications();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-panel/95 backdrop-blur border-t border-line px-3 py-1.5 select-none">
@@ -60,16 +62,22 @@ export function BottomNav({ user, isLoading, onNewPostClick }: BottomNavProps) {
 
         {/* Messages */}
         <Link
-          href={user ? '/profile?tab=inquiries' : '/login'}
+          href={user ? '/messages' : '/login'}
           className={clsx(
-            'min-w-[48px] min-h-[44px] flex flex-col items-center justify-center gap-1 py-1 px-2 text-[11px] font-medium transition-colors',
-            pathname === '/profile' && typeof window !== 'undefined' && window.location.search.includes('tab=inquiries')
-              ? 'text-cobalt font-semibold'
-              : 'text-ink-muted hover:text-ink'
+            'min-w-[48px] min-h-[44px] flex flex-col items-center justify-center gap-1 py-1 px-2 text-[11px] font-medium transition-colors relative',
+            pathname === '/messages' ? 'text-cobalt font-semibold' : 'text-ink-muted hover:text-ink'
           )}
           aria-label="Messages"
         >
-          <MessageSquare className="w-5 h-5" />
+          <div className="relative">
+            <MessageSquare className="w-5 h-5" />
+            {unreadMessagesCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 pointer-events-none">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white" />
+              </span>
+            )}
+          </div>
           <span>Messages</span>
         </Link>
 
@@ -78,7 +86,7 @@ export function BottomNav({ user, isLoading, onNewPostClick }: BottomNavProps) {
           href={user ? '/profile' : '/login'}
           className={clsx(
             'min-w-[48px] min-h-[44px] flex flex-col items-center justify-center gap-1 py-1 px-2 text-[11px] font-medium transition-colors',
-            (pathname === '/profile' && (typeof window === 'undefined' || !window.location.search.includes('tab=inquiries'))) || pathname === '/login'
+            pathname === '/profile' || pathname === '/login'
               ? 'text-cobalt font-semibold'
               : 'text-ink-muted hover:text-ink'
           )}

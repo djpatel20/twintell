@@ -15,6 +15,7 @@ import {
   Loader2,
   ExternalLink,
   Users,
+  FileText,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '../../components/ui/Button';
@@ -85,6 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { label: 'Overview', href: '/admin', icon: LayoutDashboard, exact: true },
     { label: 'Subscriptions & Companies', href: '/admin/subscriptions', icon: Building2 },
     { label: 'In-Feed Ads', href: '/admin/ads', icon: Megaphone },
+    { label: 'Content Moderation', href: '/admin/moderation', icon: FileText },
   ];
 
   return (

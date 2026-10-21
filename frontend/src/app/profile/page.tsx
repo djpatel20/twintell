@@ -38,8 +38,10 @@ import {
   CreditCard,
   ArrowRight,
   ShieldCheck,
+  UploadCloud,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { uploadFileToStorage } from '../../lib/upload';
 
 function ProfileContent() {
   const router = useRouter();
@@ -84,6 +86,24 @@ function ProfileContent() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isUpdatingUser, setIsUpdatingUser] = useState(false);
   const [userUpdateError, setUserUpdateError] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingAvatar(true);
+    setUserUpdateError(null);
+    try {
+      const url = await uploadFileToStorage(file);
+      setAvatarUrl(url);
+    } catch (err: any) {
+      setUserUpdateError(err?.message || 'Failed to upload profile photo.');
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
 
   // Sync state when user is loaded
   useEffect(() => {
@@ -437,7 +457,7 @@ function ProfileContent() {
                       </div>
                       {subDetails.usage.postsLimit && subDetails.usage.postsUsed >= subDetails.usage.postsLimit && (
                         <p className="text-[11px] text-amber-600 font-medium">
-                          Post limit reached for this period. Upgrade to Business Pro to publish up to 10 posts!
+                          Post limit reached for this period. Upgrade to Pro Plan to publish up to 10 posts every month!
                         </p>
                       )}
                     </div>
@@ -478,6 +498,28 @@ function ProfileContent() {
                 {inquiries.length} {inquiries.length === 1 ? 'Conversation' : 'Conversations'}
               </span>
             </div>
+
+            {/* Free Plan Lock Banner */}
+            {isCompany && subDetails?.plan?.code === 'FREE' && (
+              <div className="p-4 bg-amber-50 border-b border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4 text-amber-700" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-900">Buyer Enquiries are Locked on Free Plan</h4>
+                    <p className="text-[11px] text-amber-700">
+                      Companies on the Free Plan cannot receive new direct buyer enquiries or RFQs. Upgrade to Pro Plan (₹1,999/yr) to unlock direct buyer messaging.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/pricing" className="shrink-0 w-full sm:w-auto">
+                  <Button size="sm" className="w-full text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white">
+                    Upgrade to Pro Plan
+                  </Button>
+                </Link>
+              </div>
+            )}
 
             {/* Content List */}
             {inquiriesLoading ? (
@@ -617,7 +659,7 @@ function ProfileContent() {
 
               <Link href="/pricing">
                 <Button size="sm" className="font-bold shadow-xs" leftIcon={<Zap className="w-3.5 h-3.5" />}>
-                  {subDetails?.plan?.code === 'PRO' ? 'View All Plans' : 'Upgrade to Business Pro'}
+                  {subDetails?.plan?.code === 'ADVERTISING' ? 'View All Plans' : 'Upgrade Plan'}
                 </Button>
               </Link>
             </div>
@@ -753,12 +795,72 @@ function ProfileContent() {
                   maxLength={100}
                 />
 
-                <Input
-                  label="Avatar Image URL"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://..."
-                />
+                {/* Profile Photo File Upload */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Profile Photo
+                  </label>
+                  <input
+                    type="file"
+                    ref={avatarInputRef}
+                    onChange={handleAvatarUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  {avatarUrl ? (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <Avatar
+                        name={name || 'User'}
+                        src={avatarUrl}
+                        size="md"
+                        className="shrink-0 border border-slate-200"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-slate-800">Photo Uploaded</p>
+                        <p className="text-[10px] text-slate-500 truncate">{avatarUrl}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={isUploadingAvatar}
+                          className="text-xs"
+                        >
+                          Change
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setAvatarUrl('')}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                          title="Remove Photo"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      className="w-full py-3 px-4 border-2 border-dashed border-slate-200 hover:border-primary-500 rounded-xl text-center flex items-center justify-center gap-2 text-xs font-semibold text-slate-600 hover:text-primary-600 transition-colors bg-slate-50/50"
+                    >
+                      {isUploadingAvatar ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                          <span>Uploading photo to storage...</span>
+                        </>
+                      ) : (
+                        <>
+                          <UploadCloud className="w-4 h-4 text-primary-500" />
+                          <span>Upload Profile Photo (PNG, JPG, WebP)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">

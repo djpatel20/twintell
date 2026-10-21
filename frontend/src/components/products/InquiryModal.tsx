@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { api } from '../../lib/api-client';
 import { getSocket } from '../../lib/socket';
 import { Button } from '../ui/Button';
@@ -21,6 +23,10 @@ import {
   Sparkles,
   ArrowLeft,
   CheckCircle2,
+  ExternalLink,
+  Power,
+  CheckCheck,
+  Clock,
 } from 'lucide-react';
 
 export interface InquiryModalProps {
@@ -56,6 +62,7 @@ export function InquiryModal({
 }: InquiryModalProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { markInquiryRead } = useNotifications();
   const queryClient = useQueryClient();
 
   const [activeInquiryId, setActiveInquiryId] = useState<string | null>(initialInquiryId);
@@ -65,6 +72,13 @@ export function InquiryModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Mark inquiry as read when viewing conversation in modal
+  useEffect(() => {
+    if (activeInquiryId && isOpen) {
+      markInquiryRead(activeInquiryId);
+    }
+  }, [activeInquiryId, isOpen, markInquiryRead]);
 
   // Initialize predefined template whenever product / company changes
   useEffect(() => {
@@ -192,27 +206,77 @@ export function InquiryModal({
     }
   };
 
-  // Handle sending follow-up chat message in ongoing thread
+  // Handle sending follow-up chat message in ongoing thread with instant optimistic UI
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !activeInquiryId) return;
 
     const content = chatInput.trim();
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMsg: InquiryMessage = {
+      id: tempId,
+      inquiryId: activeInquiryId,
+      senderId: user?.id || '',
+      content,
+      createdAt: new Date().toISOString(),
+      status: 'pending',
+      sender: {
+        id: user?.id || '',
+        name: user?.name || 'You',
+        avatarUrl: user?.avatarUrl || null,
+      },
+    };
+
+    // Immediately update UI cache
+    queryClient.setQueryData<{ data: Inquiry }>(['inquiry-thread', activeInquiryId], (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        data: {
+          ...old.data,
+          messages: [...(old.data.messages || []), optimisticMsg],
+        },
+      };
+    });
+
     setChatInput('');
     setErrorMsg(null);
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
 
     try {
-      await api.post(`/api/inquiries/${activeInquiryId}/messages`, {
+      const res = await api.post<{ data: InquiryMessage }>(`/api/inquiries/${activeInquiryId}/messages`, {
         content,
       });
 
-      // Refetch conversation thread immediately
-      refetchConversation();
+      // Reconcile optimistic message with server response
+      queryClient.setQueryData<{ data: Inquiry }>(['inquiry-thread', activeInquiryId], (old) => {
+        if (!old) return old;
+        const filtered = (old.data.messages || []).filter((m) => m.id !== tempId);
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            messages: [...filtered, { ...res.data, status: 'sent' }],
+          },
+        };
+      });
+
       queryClient.invalidateQueries({ queryKey: ['user-inquiries'] });
       queryClient.invalidateQueries({ queryKey: ['company-inquiries'] });
     } catch (err: any) {
       setErrorMsg(err?.message || 'Failed to send message. Please retry.');
-      setChatInput(content); // restore typed text on error
+      queryClient.setQueryData<{ data: Inquiry }>(['inquiry-thread', activeInquiryId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            messages: (old.data.messages || []).map((m) =>
+              m.id === tempId ? { ...m, status: 'failed' as const } : m
+            ),
+          },
+        };
+      });
     }
   };
 
@@ -232,7 +296,7 @@ export function InquiryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden flex flex-col h-[650px] max-h-[92vh]">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl lg:max-w-4xl w-full overflow-hidden flex flex-col h-[680px] max-h-[92vh]">
         {/* Top Header */}
         <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/80">
           <div className="flex items-center gap-3 min-w-0">
@@ -255,6 +319,16 @@ export function InquiryModal({
           </div>
 
           <div className="flex items-center gap-1">
+            {activeInquiryId && (
+              <Link
+                href={`/messages?inquiryId=${activeInquiryId}`}
+                onClick={onClose}
+                className="p-1.5 text-slate-400 hover:text-primary-600 rounded-lg hover:bg-slate-100 transition-colors"
+                title="Open in Full Messages Page"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -431,14 +505,33 @@ export function InquiryModal({
                         </div>
 
                         <div
-                          className={`text-[9px] text-slate-400 px-1 ${
-                            isCurrentUser ? 'text-right' : 'text-left'
+                          className={`flex items-center gap-1.5 text-[9px] text-slate-400 px-1 ${
+                            isCurrentUser ? 'justify-end' : 'justify-start'
                           }`}
                         >
-                          {new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
+                          {msg.status === 'pending' ? (
+                            <span className="inline-flex items-center gap-1 font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200 shadow-2xs">
+                              <Power className="w-2.5 h-2.5 text-amber-500 animate-pulse" />
+                              <span>Sending...</span>
+                            </span>
+                          ) : msg.status === 'failed' ? (
+                            <span className="inline-flex items-center gap-1 font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-200">
+                              <span>Failed to send</span>
+                            </span>
+                          ) : (
+                            <>
+                              <Clock className="w-2.5 h-2.5" />
+                              <span>
+                                {new Date(msg.createdAt).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              {isCurrentUser && (
+                                <CheckCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>

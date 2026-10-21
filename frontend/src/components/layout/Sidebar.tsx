@@ -32,15 +32,8 @@ interface SidebarProps {
 
 export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
   const pathname = usePathname();
-  const [isMessagesActive, setIsMessagesActive] = useState(false);
   const isCompany = user?.role === 'COMPANY';
-  const { unreadCount } = useNotifications();
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsMessagesActive(pathname === '/profile' && window.location.search.includes('tab=inquiries'));
-    }
-  }, [pathname]);
+  const { unreadCount, unreadMessagesCount } = useNotifications();
 
   const navItems = [
     { label: 'Home', href: '/', icon: Home, isActive: pathname === '/' },
@@ -48,9 +41,10 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
     { label: 'Directory', href: '/directory', icon: Building2, isActive: pathname === '/directory' },
     {
       label: 'Messages',
-      href: user ? '/profile?tab=inquiries' : '/login',
+      href: user ? '/messages' : '/login',
       icon: MessageSquare,
-      isActive: isMessagesActive,
+      isActive: pathname === '/messages',
+      showDot: unreadMessagesCount > 0,
     },
     {
       label: 'Notifications',
@@ -69,7 +63,7 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
       label: 'Profile',
       href: user ? '/profile' : '/login',
       icon: UserIcon,
-      isActive: pathname === '/profile' && !isMessagesActive,
+      isActive: pathname === '/profile',
     },
     ...(user?.role === 'ADMIN'
       ? [
@@ -113,11 +107,16 @@ export function Sidebar({ user, isLoading, onNewPostClick }: SidebarProps) {
                   />
                   <span>{item.label}</span>
                 </div>
-                {item.badge && (
+                {item.showDot ? (
+                  <span className="flex h-2.5 w-2.5 relative shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white" />
+                  </span>
+                ) : item.badge ? (
                   <Badge variant="count">
                     {item.badge}
                   </Badge>
-                )}
+                ) : null}
               </Link>
             );
           })}

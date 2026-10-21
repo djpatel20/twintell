@@ -17,7 +17,7 @@ interface NavbarProps {
 
 export function Navbar({ user, isLoading }: NavbarProps) {
   const router = useRouter();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, unreadMessagesCount } = useNotifications();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Global Ctrl+K / Cmd+K shortcut listener per DESIGN.md §7
@@ -62,7 +62,7 @@ export function Navbar({ user, isLoading }: NavbarProps) {
         {/* Global Search Bar (Wide, centered on desktop) */}
         <div className="flex-1 max-w-lg mx-auto">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-            <div className="absolute left-3 text-ink-muted pointer-events-none flex items-center justify-center">
+            <div className="absolute left-3 text-slate-400 pointer-events-none flex items-center justify-center">
               <Search className="w-4 h-4" />
             </div>
             <input
@@ -70,11 +70,11 @@ export function Navbar({ user, isLoading }: NavbarProps) {
               type="text"
               name="search"
               placeholder="Search companies, products, posts..."
-              className="w-full h-9 rounded-lg bg-panel-sunk border border-transparent pl-9 pr-14 text-xs sm:text-sm text-ink placeholder:text-ink-faint transition-all duration-120 outline-none focus:border-line focus:ring-[3px] focus:ring-cobalt-soft focus:bg-panel"
+              className="w-full h-9 rounded-lg bg-slate-100 hover:bg-slate-100/90 border border-slate-200/80 pl-9 pr-14 text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-400 transition-all duration-120 outline-none focus:border-cobalt focus:ring-2 focus:ring-cobalt/15 focus:bg-white"
               aria-label="Search companies, products, posts"
             />
             <div className="absolute right-2.5 pointer-events-none hidden sm:flex items-center">
-              <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-ink-faint bg-panel border border-line">
+              <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-400 bg-white border border-slate-200 shadow-xs">
                 {shortcutHint}
               </kbd>
             </div>
@@ -94,12 +94,18 @@ export function Navbar({ user, isLoading }: NavbarProps) {
 
           {/* Messages / Direct Chats */}
           <Link
-            href={user ? '/profile?tab=inquiries' : '/login'}
+            href={user ? '/messages' : '/login'}
             title="Messages"
             className="w-9 h-9 flex items-center justify-center text-ink-muted hover:text-ink hover:bg-panel-sunk rounded-lg transition-colors relative"
             aria-label="Messages"
           >
             <MessageSquare className="w-5 h-5" />
+            {unreadMessagesCount > 0 && (
+              <span className="absolute top-2 right-2 flex h-2.5 w-2.5 pointer-events-none">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-white" />
+              </span>
+            )}
           </Link>
 
           {/* Notifications Bell */}

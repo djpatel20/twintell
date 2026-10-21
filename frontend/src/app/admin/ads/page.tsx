@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api-client';
+import { toast } from '../../../context/ToastContext';
 import { SponsoredAd } from '../../../types';
 import { Button } from '../../../components/ui/Button';
 import {
@@ -21,8 +22,10 @@ import {
   AlertCircle,
   CheckCircle2,
   Image as ImageIcon,
+  UploadCloud,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { uploadFileToStorage } from '../../../lib/upload';
 
 export default function AdminAdsPage() {
   const queryClient = useQueryClient();
@@ -37,6 +40,24 @@ export default function AdminAdsPage() {
   const [durationDays, setDurationDays] = useState(30);
 
   const [formError, setFormError] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingImage(true);
+    setFormError(null);
+    try {
+      const url = await uploadFileToStorage(file);
+      setImageUrl(url);
+    } catch (err: any) {
+      setFormError(err?.message || 'Failed to upload banner creative image.');
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   // Fetch all ads
   const { data, isLoading, isError, refetch } = useQuery({
@@ -61,11 +82,14 @@ export default function AdminAdsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ads'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success('Campaign Created', 'Sponsored ad campaign has been published.');
       setIsCreateModalOpen(false);
       resetForm();
     },
     onError: (err: any) => {
-      setFormError(err?.message || 'Failed to create sponsored ad');
+      const msg = err?.message || 'Failed to create sponsored ad';
+      setFormError(msg);
+      toast.error('Campaign Creation Failed', msg);
     },
   });
 
@@ -73,8 +97,12 @@ export default function AdminAdsPage() {
   const toggleStatusMutation = useMutation({
     mutationFn: ({ adId, newStatus }: { adId: string; newStatus: 'ACTIVE' | 'PAUSED' }) =>
       api.patch(`/api/admin/ads/${adId}`, { status: newStatus }),
-    onSuccess: () => {
+    onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-ads'] });
+      toast.info(`Campaign ${vars.newStatus === 'ACTIVE' ? 'Resumed' : 'Paused'}`);
+    },
+    onError: (err: any) => {
+      toast.error('Update Failed', err?.message);
     },
   });
 
@@ -84,6 +112,10 @@ export default function AdminAdsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-ads'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success('Campaign Deleted', 'Sponsored ad has been removed.');
+    },
+    onError: (err: any) => {
+      toast.error('Delete Failed', err?.message);
     },
   });
 
@@ -336,16 +368,67 @@ export default function AdminAdsPage() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="font-bold text-slate-300">Banner Creative Image URL *</label>
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-300">Banner Creative Image *</label>
                 <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/... or uploaded image URL"
-                  className="w-full bg-slate-950 text-white rounded-xl p-2.5 border border-slate-800 focus:outline-none focus:border-primary-500"
-                  required
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
                 />
+                {imageUrl ? (
+                  <div className="flex items-center gap-3 p-3 bg-slate-950 border border-slate-800 rounded-xl">
+                    <img
+                      src={imageUrl}
+                      alt="Banner Preview"
+                      className="w-20 h-10 rounded-lg object-cover bg-slate-900 border border-slate-700 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-200">Creative Uploaded</p>
+                      <p className="text-[10px] text-slate-400 truncate">{imageUrl}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingImage}
+                        className="text-xs border-slate-700 text-slate-200 hover:bg-slate-800"
+                      >
+                        Change
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => setImageUrl('')}
+                        className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-rose-950/40 transition-colors"
+                        title="Remove Image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingImage}
+                    className="w-full py-4 px-4 border-2 border-dashed border-slate-800 hover:border-primary-500 rounded-xl text-center flex items-center justify-center gap-2 text-xs font-semibold text-slate-400 hover:text-primary-400 transition-colors bg-slate-950/60"
+                  >
+                    {isUploadingImage ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-primary-400" />
+                        <span>Uploading banner creative...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-4 h-4 text-primary-400" />
+                        <span>Upload Banner Creative Image (PNG, JPG, WebP)</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

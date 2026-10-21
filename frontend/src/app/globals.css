@@ -31,26 +31,23 @@
   --primary: var(--cobalt);
 }
 
-.dark,
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #E8ECF5;
-    --ink-muted: #9AA3B5;
-    --ink-faint: #6B7487;
-    --surface: #0F1626;
-    --panel: #172033;
-    --panel-sunk: #1D2840;
-    --line: #26324A;
-    --cobalt: #6C82FF;
-    --cobalt-soft: #1E2A55;
-    --amber: #F2B24C;
-    --amber-soft: #3A2C12;
-    --green: #3DC48E;
-    --red: #F06A6A;
+.dark {
+  --ink: #E8ECF5;
+  --ink-muted: #9AA3B5;
+  --ink-faint: #6B7487;
+  --surface: #0F1626;
+  --panel: #172033;
+  --panel-sunk: #1D2840;
+  --line: #26324A;
+  --cobalt: #6C82FF;
+  --cobalt-soft: #1E2A55;
+  --amber: #F2B24C;
+  --amber-soft: #3A2C12;
+  --green: #3DC48E;
+  --red: #F06A6A;
 
-    --background: var(--surface);
-    --primary: var(--cobalt);
-  }
+  --background: var(--surface);
+  --primary: var(--cobalt);
 }
 
 body {

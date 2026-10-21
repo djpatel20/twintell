@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,7 @@ import { RightRail } from '../components/feed/RightRail';
 import { SponsoredAdCard } from '../components/feed/SponsoredAdCard';
 import { api } from '../lib/api-client';
 import { Post, SponsoredAd } from '../types';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { STATIC_CATEGORIES } from '../constants/categories';
 
 const FILTER_CATEGORIES = [
@@ -36,8 +36,9 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'for-you' | 'following'>('for-you');
   const [selectedTopic, setSelectedTopic] = useState('ALL');
   const [showNewPill, setShowNewPill] = useState(false);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch Infinite Feed from Backend API
+  // Fetch Infinite Feed from Backend API with Caching
   const {
     data,
     isLoading,
@@ -64,8 +65,32 @@ export default function HomePage() {
     },
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor || undefined,
-    staleTime: 60000,
+    staleTime: 60 * 1000, // 60s cache freshness
+    gcTime: 10 * 60 * 1000, // 10 minutes cache retention in memory
+    refetchOnWindowFocus: false, // Prevent feed jump on tab change
   });
+
+  // Native IntersectionObserver for auto-triggering next page when user scrolls near the bottom
+  useEffect(() => {
+    const sentinel = bottomSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      {
+        rootMargin: '250px', // Pre-fetch 250px before the user hits the exact bottom
+        threshold: 0.05,
+      }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Fetch active sponsored ads
   const { data: adsData } = useQuery({
@@ -75,7 +100,10 @@ export default function HomePage() {
   });
 
   const activeAds = adsData?.data || [];
-  const allPosts = data?.pages.flatMap((page) => page.data) ?? [];
+  // Deduplicate posts across pages by ID to guarantee unique React keys
+  const allPosts = Array.from(
+    new Map((data?.pages.flatMap((page) => page.data) ?? []).map((p) => [p.id, p])).values()
+  );
 
   const handleRefreshFeed = async () => {
     setShowNewPill(false);
@@ -196,18 +224,21 @@ export default function HomePage() {
               </React.Fragment>
             ))}
 
-            {/* Load More Button */}
+            {/* Auto-Scroll Infinite Feed Sentinel */}
             {hasNextPage && (
-              <div className="pt-2 text-center">
-                <Button
-                  variant="secondary"
-                  size="md"
-                  onClick={() => fetchNextPage()}
-                  isLoading={isFetchingNextPage}
-                  className="w-full sm:w-auto px-6"
-                >
-                  Load more updates
-                </Button>
+              <div ref={bottomSentinelRef} className="py-6 flex flex-col items-center justify-center gap-2">
+                {isFetchingNextPage && (
+                  <div className="flex items-center gap-2 text-sm text-slate-500 font-medium bg-white px-4 py-2 rounded-full border border-slate-200 shadow-xs">
+                    <Loader2 className="w-4 h-4 text-primary-600 animate-spin" />
+                    <span>Loading more updates...</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!hasNextPage && allPosts.length > 0 && (
+              <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                You've caught up with all updates
               </div>
             )}
           </div>

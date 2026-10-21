@@ -12,6 +12,9 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   ADMIN_SECRET: z.string().default('twintell-admin-secret-key-2026'),
+  RAZORPAY_KEY_ID: z.string().optional().default(process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder_key'),
+  RAZORPAY_KEY_SECRET: z.string().optional().default(process.env.RAZORPAY_KEY_SECRET || 'rzp_test_placeholder_secret'),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(process.env.RAZORPAY_WEBHOOK_SECRET || ''),
 });
 
 const _env = envSchema.safeParse(process.env);

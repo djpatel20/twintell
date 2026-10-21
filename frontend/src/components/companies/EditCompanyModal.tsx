@@ -4,10 +4,12 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api-client';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from '../../context/ToastContext';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { X, Building2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Building2, AlertCircle, CheckCircle2, UploadCloud, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Category } from '../../types';
+import { uploadFileToStorage } from '../../lib/upload';
 
 interface EditCompanyModalProps {
   isOpen: boolean;
@@ -49,6 +51,40 @@ export function EditCompanyModal({
   );
   const [logoUrl, setLogoUrl] = useState(initialData.logoUrl || '');
   const [coverUrl, setCoverUrl] = useState(initialData.coverUrl || '');
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
+  const coverInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingLogo(true);
+    try {
+      const url = await uploadFileToStorage(file);
+      setLogoUrl(url);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Failed to upload logo.');
+    } finally {
+      setIsUploadingLogo(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingCover(true);
+    try {
+      const url = await uploadFileToStorage(file);
+      setCoverUrl(url);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Failed to upload cover banner.');
+    } finally {
+      setIsUploadingCover(false);
+      if (coverInputRef.current) coverInputRef.current.value = '';
+    }
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -100,10 +136,13 @@ export function EditCompanyModal({
       });
 
       await refreshUser();
+      toast.success('Company Profile Updated', 'Your changes have been saved.');
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to update company profile.');
+      const msg = err?.message || 'Failed to update company profile.';
+      setErrorMsg(msg);
+      toast.error('Update Failed', msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -248,19 +287,137 @@ export function EditCompanyModal({
             placeholder="e.g. Packaging, Corrugated Boxes, Bulk Order"
           />
 
-          <Input
-            label="Company Logo URL"
-            value={logoUrl}
-            onChange={(e) => setLogoUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          {/* Company Logo File Upload */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700">
+              Company Logo Image
+            </label>
+            <input
+              type="file"
+              ref={logoInputRef}
+              onChange={handleLogoUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            {logoUrl ? (
+              <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <img
+                  src={logoUrl}
+                  alt="Company Logo"
+                  className="w-12 h-12 rounded-lg object-cover bg-white border border-slate-200 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-800">Logo Uploaded</p>
+                  <p className="text-[10px] text-slate-500 truncate">{logoUrl}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => logoInputRef.current?.click()}
+                    disabled={isUploadingLogo}
+                    className="text-xs"
+                  >
+                    Change
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setLogoUrl('')}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                    title="Remove Logo"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={isUploadingLogo}
+                className="w-full py-3 px-4 border-2 border-dashed border-slate-200 hover:border-primary-500 rounded-xl text-center flex items-center justify-center gap-2 text-xs font-semibold text-slate-600 hover:text-primary-600 transition-colors bg-slate-50/50"
+              >
+                {isUploadingLogo ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                    <span>Uploading logo to storage...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-4 h-4 text-primary-500" />
+                    <span>Upload Company Logo (PNG, JPG, WebP)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
 
-          <Input
-            label="Cover Banner URL"
-            value={coverUrl}
-            onChange={(e) => setCoverUrl(e.target.value)}
-            placeholder="https://..."
-          />
+          {/* Cover Banner File Upload */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700">
+              Company Cover Banner Image
+            </label>
+            <input
+              type="file"
+              ref={coverInputRef}
+              onChange={handleCoverUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            {coverUrl ? (
+              <div className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <img
+                  src={coverUrl}
+                  alt="Company Cover"
+                  className="w-20 h-10 rounded-lg object-cover bg-white border border-slate-200 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-slate-800">Banner Uploaded</p>
+                  <p className="text-[10px] text-slate-500 truncate">{coverUrl}</p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => coverInputRef.current?.click()}
+                    disabled={isUploadingCover}
+                    className="text-xs"
+                  >
+                    Change
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverUrl('')}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                    title="Remove Banner"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => coverInputRef.current?.click()}
+                disabled={isUploadingCover}
+                className="w-full py-3 px-4 border-2 border-dashed border-slate-200 hover:border-primary-500 rounded-xl text-center flex items-center justify-center gap-2 text-xs font-semibold text-slate-600 hover:text-primary-600 transition-colors bg-slate-50/50"
+              >
+                {isUploadingCover ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
+                    <span>Uploading banner to storage...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-4 h-4 text-primary-500" />
+                    <span>Upload Cover Banner (PNG, JPG, WebP)</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
