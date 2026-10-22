@@ -18,7 +18,7 @@ interface AuthContextType {
   role: Role | null;
   company: Company | null;
   isLoading: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null; user?: User | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<SignUpResult>;
   signInWithOAuth: (provider: 'google' | 'linkedin_oidc') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -32,16 +32,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const fetchUserProfile = useCallback(async () => {
+  const fetchUserProfile = useCallback(async (): Promise<User | null> => {
     try {
       const res = await api.get<{ data: User }>('/api/me');
       if (res?.data) {
         setUser(res.data);
+        return res.data;
       } else {
         setUser(null);
+        return null;
       }
-    } catch {
+    } catch (err: any) {
+      // If 401 Unauthorized or 404 Not Found, token in local storage is stale,
+      // invalid, or belongs to a missing user. Clear session so the app doesn't get trapped in a zombie state.
+      if (err?.status === 401 || err?.status === 404) {
+        await supabase.auth.signOut().catch(() => {});
+        setSession(null);
+      }
       setUser(null);
+      return null;
     }
   }, []);
 
@@ -55,17 +64,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     const checkSession = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      if (!mounted) return;
-      
-      setSession(initialSession);
-      if (initialSession) {
-        await fetchUserProfile();
-      } else {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        if (initialSession) {
+          setSession(initialSession);
+          await fetchUserProfile();
+        } else {
+          setSession(null);
+          setUser(null);
+        }
+      } catch {
+        if (!mounted) return;
+        setSession(null);
         setUser(null);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-      
-      if (mounted) setIsLoading(false);
     };
 
     checkSession();
@@ -103,19 +119,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [fetchUserProfile]);
 
-  const signInWithEmail = async (email: string, password: string) => {
+  const signInWithEmail = async (email: string, password: string): Promise<{ error: Error | null; user?: User | null }> => {
     setIsLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    let profile: User | null = null;
     if (!error && data.session) {
       setSession(data.session);
-      await fetchUserProfile();
+      profile = await fetchUserProfile();
     }
     setIsLoading(false);
-    return { error: error ? new Error(error.message) : null };
+    return { error: error ? new Error(error.message) : null, user: profile };
   };
 
   const signUpWithEmail = async (email: string, password: string, name: string): Promise<SignUpResult> => {

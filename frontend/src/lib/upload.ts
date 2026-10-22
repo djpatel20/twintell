@@ -5,12 +5,18 @@ import { api } from './api-client';
  * Returns the permanent public CDN URL for the uploaded file.
  */
 export async function uploadFileToStorage(file: File): Promise<string> {
-  // 1. Get signed upload URL from backend
+  // 1. Client-side size validation
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error(`"${file.name}" exceeds the 5MB size limit.`);
+  }
+
+  // 2. Get signed upload URL from backend
   const signRes = await api.post<{ uploadUrl: string; publicUrl: string; filePath: string }>(
     '/api/uploads/sign',
     {
       fileName: file.name,
       fileType: file.type || 'image/jpeg',
+      fileSize: file.size,
     }
   );
 

@@ -21,18 +21,20 @@ function LoginContent() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { user, session, role, signInWithEmail, signUpWithEmail, signInWithOAuth } = useAuth();
+  const { user, session, isLoading, signInWithEmail, signUpWithEmail, signInWithOAuth } = useAuth();
 
-  // If already logged in, redirect accordingly
+  // If already logged in with a verified session and user profile, redirect accordingly
   useEffect(() => {
-    if (session) {
-      if (role === null) {
+    if (isLoading) return;
+
+    if (session && user) {
+      if (user.role === null) {
         router.push('/onboarding');
       } else {
         router.push('/');
       }
     }
-  }, [session, role, router]);
+  }, [session, user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,8 +65,12 @@ function LoginContent() {
         const res = await signInWithEmail(email, password);
         if (res.error) {
           setErrorMsg(res.error.message);
-        } else {
-          router.push(role === null ? '/onboarding' : '/');
+        } else if (res.user) {
+          if (res.user.role === null) {
+            router.push('/onboarding');
+          } else {
+            router.push('/');
+          }
         }
       }
     } catch (err: any) {
@@ -73,6 +79,16 @@ function LoginContent() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-8 h-8 text-primary-500 animate-spin">
+          <Loader2 className="w-8 h-8" />
+        </div>
+      </div>
+    );
+  }
 
   const handleGoogleLogin = async () => {
     setErrorMsg(null);

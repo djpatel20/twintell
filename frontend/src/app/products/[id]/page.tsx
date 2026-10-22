@@ -231,23 +231,25 @@ export default function ProductDetailPage() {
                     )}
                   </div>
 
-                  {/* Highlights Bar */}
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-primary-500 shrink-0" />
-                      <div>
-                        <p className="font-bold text-slate-800">Direct Supply</p>
-                        <p className="text-[11px] text-slate-500">Factory direct dispatch</p>
+                  {/* Highlights Bar (Buyer perspective only, hidden for company owner) */}
+                  {!isOwner && (
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-primary-500 shrink-0" />
+                        <div>
+                          <p className="font-bold text-slate-800">Direct Supply</p>
+                          <p className="text-[11px] text-slate-500">Factory direct dispatch</p>
+                        </div>
+                      </div>
+                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div>
+                          <p className="font-bold text-slate-800">Verified Quality</p>
+                          <p className="text-[11px] text-slate-500">B2B procurement grade</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <div>
-                        <p className="font-bold text-slate-800">Verified Quality</p>
-                        <p className="text-[11px] text-slate-500">B2B procurement grade</p>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="space-y-2 pt-4 border-t border-slate-100">
@@ -379,53 +381,85 @@ export default function ProductDetailPage() {
               {/* Supplier Profile Card (1 Col) */}
               {company && (
                 <div className="space-y-4">
-                  <div className="bg-white rounded-card p-5 border border-slate-200 shadow-soft space-y-4">
+                  <div className="bg-white rounded-card p-5 sm:p-6 border border-slate-200 shadow-soft space-y-5">
+                    {/* Header */}
                     <div className="flex items-center gap-3">
                       <Avatar
                         name={company.name}
                         src={company.logoUrl || undefined}
                         size="md"
+                        className="shrink-0 rounded-xl border border-slate-100 shadow-2xs"
                       />
-                      <div className="min-w-0">
-                        <Link
-                          href={`/companies/${company.slug}`}
-                          className="text-sm font-bold text-slate-900 hover:text-primary-600 transition-colors truncate block"
-                        >
-                          {company.name}
-                        </Link>
-                        <p className="text-xs text-slate-500">
-                          {company.businessType} • {company.city}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Link
+                            href={`/companies/${company.slug}`}
+                            className="text-sm font-bold text-slate-900 hover:text-primary-600 transition-colors truncate"
+                            title={company.name}
+                          >
+                            {company.name}
+                          </Link>
+                          {company.verified && <VerifiedBadge showLabel={false} />}
+                        </div>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                          {[company.businessType, company.city].filter(Boolean).join(' • ') || 'Business Member'}
                         </p>
                       </div>
                     </div>
 
-                    <div className="space-y-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Location</span>
-                        <span className="font-semibold text-slate-800">
-                          {company.city}, {company.state}
+                    {/* Meta info list */}
+                    <div className="space-y-3 pt-3 border-t border-slate-100 text-xs">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-slate-400 shrink-0 font-medium">Location</span>
+                        <span className="font-semibold text-slate-800 text-right truncate">
+                          {[company.city, company.state].filter(Boolean).join(', ') || 'India'}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Verification</span>
-                        <span className="font-semibold text-emerald-600 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Verified Supplier</span>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-400 shrink-0 font-medium">Verification</span>
+                        {company.verified ? (
+                          <span className="font-semibold text-emerald-600 inline-flex items-center gap-1 text-right">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span>Verified Supplier</span>
+                          </span>
+                        ) : (
+                          <span className="font-medium text-slate-500 text-right">
+                            Registered Member
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-slate-400 shrink-0 font-medium">Followers</span>
+                        <span className="font-semibold text-slate-800 text-right">
+                          {(company.followerCount || 0).toLocaleString()}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Followers</span>
-                        <span className="font-semibold text-slate-800">
-                          {company.followerCount}
-                        </span>
-                      </div>
+
+                      {company.category && (
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-slate-400 shrink-0 font-medium">Category</span>
+                          <span className="font-semibold text-slate-800 text-right truncate">
+                            {company.category.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
-                    <Link href={`/companies/${company.slug}`} className="block pt-2">
-                      <Button variant="outline" size="sm" className="w-full text-xs font-semibold" rightIcon={<ExternalLink className="w-3.5 h-3.5" />}>
-                        View Company Profile
-                      </Button>
-                    </Link>
+                    {/* View Button */}
+                    <div className="pt-1">
+                      <Link href={`/companies/${company.slug}`} className="block">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-xs font-semibold justify-center hover:bg-primary-50 hover:text-primary-600 hover:border-primary-200 transition-colors"
+                          rightIcon={<ExternalLink className="w-3.5 h-3.5" />}
+                        >
+                          View Company Profile
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}

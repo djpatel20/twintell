@@ -23,7 +23,7 @@ import {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, session, role, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, session, role, isLoading: authLoading, refreshUser, signOut } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState<'USER' | 'COMPANY'>('USER');
   const [step, setStep] = useState<1 | 2>(1); // 1 = Role selection, 2 = Company details
@@ -65,6 +65,7 @@ export default function OnboardingPage() {
       const signRes = await api.post<{ uploadUrl: string; publicUrl: string }>('/api/uploads/sign', {
         fileName: file.name,
         fileType: file.type || 'image/jpeg',
+        fileSize: file.size,
       });
 
       const uploadRes = await fetch(signRes.uploadUrl, {
@@ -188,6 +189,24 @@ export default function OnboardingPage() {
               ? 'Select how you want to participate in the B2B network. Note: Role selection is permanent.'
               : 'Provide basic company details to showcase your business to buyers across India.'}
           </p>
+          <div className="flex items-center justify-center gap-2 pt-1 text-xs text-slate-500">
+            {user?.email && (
+              <>
+                <span>Signed in as <strong>{user.email}</strong></span>
+                <span>•</span>
+              </>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                await signOut();
+                router.push('/login');
+              }}
+              className="text-primary-600 hover:text-primary-800 font-medium underline underline-offset-2"
+            >
+              Sign out / Use another account
+            </button>
+          </div>
         </div>
 
         {errorMsg && (

@@ -56,8 +56,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     queryKey: ['inquiries', 'unread-count'],
     queryFn: () => api.get<{ unreadCount: number }>('/api/inquiries/unread-count'),
     enabled: !!user,
-    staleTime: 15000,
-    refetchInterval: 15000, // Periodic background sync
+    staleTime: 60000,
+    // Event-driven: We do not poll this endpoint. Updates are pushed via WebSockets (Socket.io)
+    // and revalidated on tab focus or socket reconnect.
   });
 
   const unreadMessagesCount = unreadInquiriesData?.unreadCount ?? 0;
@@ -118,6 +119,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }, 5000);
       };
 
+      const handleSocketConnect = () => {
+        // Sync unread counts on connect/reconnect in case events were missed while disconnected
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['inquiries', 'unread-count'] });
+      };
+
+      socket.on('connect', handleSocketConnect);
       socket.on('notification:new', handleNewNotification);
 
       // Handle real-time chat messages sent by any buyer/user to the company
@@ -168,6 +176,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       socket.on('inquiry:message', handleNewInquiryMessage);
 
       return () => {
+        socket.off('connect', handleSocketConnect);
         socket.off('notification:new', handleNewNotification);
         socket.off('inquiry:message', handleNewInquiryMessage);
       };
