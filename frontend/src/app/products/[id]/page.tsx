@@ -26,8 +26,6 @@ import {
   AlertCircle,
   Loader2,
   ExternalLink,
-  ShieldCheck,
-  Truck,
   Sparkles,
   Users,
 } from 'lucide-react';
@@ -230,26 +228,6 @@ export default function ProductDetailPage() {
                       </p>
                     )}
                   </div>
-
-                  {/* Highlights Bar (Buyer perspective only, hidden for company owner) */}
-                  {!isOwner && (
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
-                        <Truck className="w-4 h-4 text-primary-500 shrink-0" />
-                        <div>
-                          <p className="font-bold text-slate-800">Direct Supply</p>
-                          <p className="text-[11px] text-slate-500">Factory direct dispatch</p>
-                        </div>
-                      </div>
-                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <div>
-                          <p className="font-bold text-slate-800">Verified Quality</p>
-                          <p className="text-[11px] text-slate-500">B2B procurement grade</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 <div className="space-y-2 pt-4 border-t border-slate-100">
