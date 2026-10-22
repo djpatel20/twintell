@@ -18,10 +18,15 @@ export default function AuthCallbackPage() {
         // 1. If PKCE code exists in search query, exchange it for session
         const searchParams = new URLSearchParams(window.location.search);
         const code = searchParams.get('code');
+        const tokenHash = searchParams.get('token_hash');
+        const type = searchParams.get('type') as any;
 
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
+        } else if (tokenHash && type) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+          if (verifyError) throw verifyError;
         }
 
         // 2. Retrieve verified session

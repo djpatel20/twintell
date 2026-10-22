@@ -20,8 +20,9 @@ function LoginContent() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
-  const { user, session, isLoading, signInWithEmail, signUpWithEmail, signInWithOAuth } = useAuth();
+  const { user, session, isLoading, signInWithEmail, signUpWithEmail, resendVerificationEmail, signInWithOAuth } = useAuth();
 
   // If already logged in with a verified session and user profile, redirect accordingly
   useEffect(() => {
@@ -90,6 +91,22 @@ function LoginContent() {
     );
   }
 
+  const handleResend = async () => {
+    if (!email.trim()) {
+      setErrorMsg('Please enter your email above to resend the verification link.');
+      return;
+    }
+    setIsResending(true);
+    setErrorMsg(null);
+    const res = await resendVerificationEmail(email.trim());
+    setIsResending(false);
+    if (res.error) {
+      setErrorMsg(res.error.message);
+    } else {
+      setSuccessMsg(res.message || 'Verification email resent! Please check your inbox.');
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setErrorMsg(null);
     const res = await signInWithOAuth('google');
@@ -150,9 +167,21 @@ function LoginContent() {
 
           {/* Error / Success Alerts */}
           {errorMsg && (
-            <div className="flex items-center gap-2 p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
-              <span>{errorMsg}</span>
+            <div className="p-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                <span>{errorMsg}</span>
+              </div>
+              {errorMsg.toLowerCase().includes('email not confirmed') && (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={isResending}
+                  className="font-semibold text-primary-600 hover:text-primary-700 underline block cursor-pointer pl-6 text-[11px]"
+                >
+                  {isResending ? 'Sending...' : 'Click here to resend verification email'}
+                </button>
+              )}
             </div>
           )}
 

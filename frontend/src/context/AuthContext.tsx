@@ -20,6 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null; user?: User | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<SignUpResult>;
+  resendVerificationEmail: (email: string) => Promise<{ error: Error | null; message?: string }>;
   signInWithOAuth: (provider: 'google' | 'linkedin_oidc') => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -138,75 +139,70 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUpWithEmail = async (email: string, password: string, name: string): Promise<SignUpResult> => {
     setIsLoading(true);
     try {
-      // 1. First attempt registration via backend API.
-      // This uses supabaseAdmin to create the user with email_confirm: true,
-      // completely avoiding Supabase email send rate limits (over_email_send_rate_limit).
-      try {
-        await api.post('/api/register', { email, password, name });
-
-        // User created & auto-confirmed! Sign in immediately to establish active session & JWT token.
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (signInError) {
-          setIsLoading(false);
-          return { error: new Error(signInError.message) };
-        }
-
-        if (signInData.session) {
-          setSession(signInData.session);
-          await fetchUserProfile();
-        }
-
-        setIsLoading(false);
-        return { error: null, session: signInData.session };
-      } catch (backendErr: any) {
-        // If user already exists, return immediate error
-        if (backendErr?.code === 'USER_EXISTS' || (backendErr?.message && backendErr.message.includes('already exists'))) {
-          setIsLoading(false);
-          return { error: new Error(backendErr.message || 'An account with this email already exists. Please sign in.') };
-        }
-
-        // If backend route is temporarily unreachable (e.g. during deployment spin-up), fallback to direct Supabase client signUp
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name,
-              full_name: name,
-            },
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://twintellb2b.com';
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            full_name: name,
           },
-        });
+          emailRedirectTo: `${origin}/auth/callback`,
+        },
+      });
 
-        if (error) {
-          setIsLoading(false);
-          let userMsg = error.message;
-          if (error.message.includes('rate limit') || (error as any).code === 'over_email_send_rate_limit') {
-            userMsg = 'Email rate limit reached. Please disable "Confirm email" in Supabase Auth settings or try again shortly.';
-          }
-          return { error: new Error(userMsg) };
-        }
-
-        if (data.session) {
-          setSession(data.session);
-          await fetchUserProfile();
-          setIsLoading(false);
-          return { error: null, session: data.session };
-        } else {
-          setIsLoading(false);
-          return {
-            error: null,
-            session: null,
-            message: 'Account created! Please check your email to verify your account before logging in.',
-          };
-        }
+      if (error) {
+        setIsLoading(false);
+        return { error: new Error(error.message) };
       }
+
+      // Supabase returns an empty identities array if user is already registered and confirmed
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        setIsLoading(false);
+        return {
+          error: new Error('An account with this email already exists. Please sign in or reset your password.'),
+        };
+      }
+
+      // If email confirmation is disabled or user was already confirmed
+      if (data.session) {
+        setSession(data.session);
+        await fetchUserProfile();
+        setIsLoading(false);
+        return { error: null, session: data.session };
+      }
+
+      // Email confirmation required: Supabase dispatched confirmation email via custom SMTP
+      setIsLoading(false);
+      return {
+        error: null,
+        session: null,
+        message: 'Account created! We have sent a verification link to your email. Please verify before signing in.',
+      };
     } catch (err: any) {
       setIsLoading(false);
       return { error: new Error(err.message || 'Signup failed') };
+    }
+  };
+
+  const resendVerificationEmail = async (email: string): Promise<{ error: Error | null; message?: string }> => {
+    try {
+      const origin = typeof window !== 'undefined' ? window.location.origin : 'https://twintellb2b.com';
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        return { error: new Error(error.message) };
+      }
+      return { error: null, message: 'Verification email resent! Please check your inbox and spam folder.' };
+    } catch (err: any) {
+      return { error: new Error(err.message || 'Failed to resend verification email.') };
     }
   };
 
@@ -236,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     signInWithEmail,
     signUpWithEmail,
+    resendVerificationEmail,
     signInWithOAuth,
     signOut,
     refreshUser,
