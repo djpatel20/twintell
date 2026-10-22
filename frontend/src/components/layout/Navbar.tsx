@@ -49,28 +49,28 @@ export function Navbar({ user, isLoading }: NavbarProps) {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-panel/95 backdrop-blur border-b border-line">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-[1280px] mx-auto px-2.5 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo - 240px alignment on desktop */}
         <div className="flex items-center gap-2 lg:w-[240px] shrink-0">
           <Link href="/" className="flex items-center gap-2 group">
-            <span className="font-display font-bold text-xl sm:text-2xl text-cobalt tracking-tight">
+            <span className="font-display font-bold text-lg sm:text-2xl text-cobalt tracking-tight">
               Twintell
             </span>
           </Link>
         </div>
 
         {/* Global Search Bar (Wide, centered on desktop) */}
-        <div className="flex-1 max-w-lg mx-auto">
+        <div className="flex-1 min-w-0 max-w-lg mx-auto">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-            <div className="absolute left-3 text-slate-400 pointer-events-none flex items-center justify-center">
-              <Search className="w-4 h-4" />
+            <div className="absolute left-2.5 sm:left-3 text-slate-400 pointer-events-none flex items-center justify-center">
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
             <input
               ref={searchInputRef}
               type="text"
               name="search"
               placeholder="Search companies, products, posts..."
-              className="w-full h-9 rounded-lg bg-slate-100 hover:bg-slate-100/90 border border-slate-200/80 pl-9 pr-14 text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-400 transition-all duration-120 outline-none focus:border-cobalt focus:ring-2 focus:ring-cobalt/15 focus:bg-white"
+              className="w-full h-8 sm:h-9 rounded-lg bg-slate-100 hover:bg-slate-100/90 border border-slate-200/80 pl-8 sm:pl-9 pr-2.5 sm:pr-14 text-xs sm:text-sm text-slate-900 font-medium placeholder:text-slate-400 placeholder:truncate transition-all duration-120 outline-none focus:border-cobalt focus:ring-2 focus:ring-cobalt/15 focus:bg-white"
               aria-label="Search companies, products, posts"
             />
             <div className="absolute right-2.5 pointer-events-none hidden sm:flex items-center">
@@ -82,7 +82,7 @@ export function Navbar({ user, isLoading }: NavbarProps) {
         </div>
 
         {/* Right Action Items */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-3 shrink-0">
           <Link href="/directory" className="hidden sm:inline-flex">
             <Button
               variant="secondary"

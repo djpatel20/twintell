@@ -7,7 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../lib/api-client';
 import { toast } from '../../../context/ToastContext';
-import { PostTopic } from '../../../types';
+import { STATIC_CATEGORIES, getCategoryBySlug } from '../../../constants/categories';
 import { AppShell } from '../../../components/layout/AppShell';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Button } from '../../../components/ui/Button';
@@ -29,18 +29,6 @@ import {
   UploadCloud,
 } from 'lucide-react';
 
-const TOPICS: { id: PostTopic; label: string; desc: string }[] = [
-  { id: 'BUSINESS_NEWS', label: 'Business News', desc: 'Company milestones, announcements & press' },
-  { id: 'MANUFACTURING', label: 'Manufacturing', desc: 'Factory updates, machinery, production capacity' },
-  { id: 'PRODUCTS', label: 'Products', desc: 'New launches, product lines, catalogues' },
-  { id: 'WHOLESALE', label: 'Wholesale', desc: 'Bulk supply offers, volume pricing, distributor terms' },
-  { id: 'D2C_BRANDS', label: 'D2C / Brands', desc: 'Packaging, consumer goods, white-label' },
-  { id: 'TECHNOLOGY', label: 'Technology', desc: 'Automation, industrial software, digital tools' },
-  { id: 'FINANCE', label: 'Finance', desc: 'Credit terms, trade finance, business banking' },
-  { id: 'AGRICULTURE', label: 'Agriculture', desc: 'Agri commodities, farming equipment, inputs' },
-  { id: 'JOBS', label: 'Jobs', desc: 'Hiring engineers, factory managers, sales teams' },
-  { id: 'MEMES', label: 'Memes', desc: 'Workplace humor & lighthearted business posts' },
-];
 
 export default function CreatePostPage() {
   const router = useRouter();
@@ -48,7 +36,15 @@ export default function CreatePostPage() {
   const queryClient = useQueryClient();
 
   const [content, setContent] = useState('');
-  const [topic, setTopic] = useState<PostTopic>('BUSINESS_NEWS');
+  const [categorySlug, setCategorySlug] = useState<string>(
+    company?.category?.slug || STATIC_CATEGORIES[0].slug
+  );
+
+  useEffect(() => {
+    if (company?.category?.slug) {
+      setCategorySlug(company.category.slug);
+    }
+  }, [company?.category?.slug]);
   const [images, setImages] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -201,7 +197,7 @@ export default function CreatePostPage() {
     try {
       const res = await api.post<{ data: { id: string } }>('/api/posts', {
         content: content.trim(),
-        topic,
+        categorySlug,
         images,
       });
 
@@ -221,7 +217,7 @@ export default function CreatePostPage() {
     }
   };
 
-  const selectedTopicMeta = TOPICS.find((t) => t.id === topic);
+  const selectedCategory = getCategoryBySlug(categorySlug) || STATIC_CATEGORIES[0];
 
   return (
     <AppShell showRightSidebar={false}>
@@ -312,32 +308,32 @@ export default function CreatePostPage() {
 
           {activeView === 'edit' ? (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Topic Selector */}
+              {/* Industry Category Selector */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-primary-500" />
-                    <span>Select Topic Category</span>
+                    <span>Industry Category</span>
                   </label>
-                  {selectedTopicMeta && (
+                  {selectedCategory && (
                     <span className="text-[11px] text-slate-400 hidden sm:inline">
-                      {selectedTopicMeta.desc}
+                      Posting to {selectedCategory.name}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {TOPICS.map((t) => (
+                  {STATIC_CATEGORIES.map((cat) => (
                     <button
-                      key={t.id}
+                      key={cat.slug}
                       type="button"
-                      onClick={() => setTopic(t.id)}
+                      onClick={() => setCategorySlug(cat.slug)}
                       className={`px-3 py-1.5 text-xs rounded-xl font-semibold transition-all ${
-                        topic === t.id
+                        categorySlug === cat.slug
                           ? 'bg-primary-500 text-white shadow-sm ring-2 ring-primary-500/20'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      {t.label}
+                      {cat.name}
                     </button>
                   ))}
                 </div>
@@ -510,8 +506,8 @@ export default function CreatePostPage() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="gray" size="sm" className="capitalize text-[11px] font-semibold">
-                    {topic.replace(/_/g, ' ').toLowerCase()}
+                  <Badge variant="primary" size="sm" className="text-[11px] font-semibold">
+                    {selectedCategory?.name || 'Industry Category'}
                   </Badge>
                 </div>
 
