@@ -80,13 +80,13 @@ export function SponsoredAdCard({ ad }: SponsoredAdCardProps) {
           </span>
         </div>
 
-        {/* Ad Creative Image */}
+        {/* Ad Creative Image (Preserves natural aspect ratio across all devices) */}
         {ad.imageUrl && (
-          <div className="rounded-xl overflow-hidden max-h-80 bg-slate-100 border border-slate-100">
+          <div className="rounded-xl overflow-hidden bg-slate-100 border border-slate-100 flex items-center justify-center">
             <img
               src={ad.imageUrl}
               alt={ad.title}
-              className="w-full h-full object-cover hover:scale-101 transition-transform duration-300"
+              className="w-auto max-w-full h-auto max-h-[70vh] sm:max-h-[500px] object-contain mx-auto block hover:scale-[1.01] transition-transform duration-300 rounded-xl"
             />
           </div>
         )}

@@ -520,15 +520,17 @@ export default function CreatePostPage() {
                 {images.length > 0 && (
                   <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
                     {images.length === 1 ? (
-                      <img
-                        src={images[0]}
-                        alt="Preview"
-                        className="w-full max-h-80 object-cover"
-                      />
+                      <div className="w-full bg-slate-50 flex items-center justify-center p-1">
+                        <img
+                          src={images[0]}
+                          alt="Preview"
+                          className="w-auto max-w-full h-auto max-h-[70vh] sm:max-h-[580px] object-contain mx-auto block rounded-lg"
+                        />
+                      </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-1.5 p-1">
+                      <div className="grid grid-cols-2 gap-1.5 p-1.5">
                         {images.map((img, idx) => (
-                          <div key={idx} className="aspect-square rounded-lg overflow-hidden">
+                          <div key={idx} className="relative aspect-square sm:aspect-[4/3] rounded-lg overflow-hidden bg-slate-100">
                             <img src={img} alt="Preview" className="w-full h-full object-cover" />
                           </div>
                         ))}

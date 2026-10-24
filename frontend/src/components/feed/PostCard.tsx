@@ -11,6 +11,7 @@ import { CompanyLogo } from '../ui/CompanyLogo';
 import { VerifiedBadge } from '../ui/Badge';
 import { TopicChip, CATEGORY_COLORS } from '../ui/TopicChip';
 import { Button } from '../ui/Button';
+import { ImageLightbox } from '../ui/ImageLightbox';
 import {
   Heart,
   MessageSquare,
@@ -80,6 +81,7 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const isOwner = company?.id === post.companyId;
   const isAdmin = user?.role === 'ADMIN';
@@ -271,33 +273,58 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
         )}
       </div>
 
-      {/* Post Images (8px radius per DESIGN.md §5 & §8) */}
+      {/* Post Images (Preserves natural aspect ratio across all orientations & devices) */}
       {post.images && post.images.length > 0 && (
-        <div className="rounded-lg overflow-hidden border border-line bg-panel-sunk">
-          {post.images.length === 1 ? (
-            <div className="relative aspect-[4/3] max-h-80 w-full overflow-hidden">
-              <img
-                src={post.images[0]}
-                alt="Post attachment"
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-1 p-1">
-              {post.images.slice(0, 4).map((img, idx) => (
-                <div key={idx} className="relative aspect-square overflow-hidden rounded-md">
-                  <img
-                    src={img}
-                    alt={`Attachment ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <>
+          <div className="rounded-lg overflow-hidden border border-line bg-panel-sunk/30">
+            {post.images.length === 1 ? (
+              <div
+                className="w-full flex items-center justify-center cursor-pointer group bg-panel-sunk/20"
+                onClick={() => setLightboxIndex(0)}
+                title="Click to view full image"
+              >
+                <img
+                  src={post.images[0]}
+                  alt="Post attachment"
+                  className="w-auto max-w-full h-auto max-h-[70vh] sm:max-h-[580px] object-contain mx-auto block group-hover:opacity-95 transition-opacity"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5 p-1.5">
+                {post.images.slice(0, 4).map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-square sm:aspect-[4/3] overflow-hidden rounded-md cursor-pointer group bg-panel-sunk"
+                    onClick={() => setLightboxIndex(idx)}
+                    title="Click to view full image"
+                  >
+                    <img
+                      src={img}
+                      alt={`Attachment ${idx + 1}`}
+                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
+                      loading="lazy"
+                    />
+                    {idx === 3 && post.images.length > 4 && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-sm">
+                        +{post.images.length - 4} more
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Full Resolution Image Lightbox */}
+          <ImageLightbox
+            images={post.images}
+            currentIndex={lightboxIndex ?? 0}
+            isOpen={lightboxIndex !== null}
+            onClose={() => setLightboxIndex(null)}
+            onNavigate={(newIdx) => setLightboxIndex(newIdx)}
+          />
+        </>
       )}
 
       {/* Product Trade Strip per DESIGN.md §7 (Rendered when trade data exists) */}
