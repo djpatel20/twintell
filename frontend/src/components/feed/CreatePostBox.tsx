@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from '../../context/ToastContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api-client';
 import { CompanyLogo } from '../ui/CompanyLogo';
@@ -74,7 +75,9 @@ export function CreatePostBox() {
     if (!files || files.length === 0) return;
 
     if (images.length + files.length > 4) {
-      setErrorMsg('You can upload a maximum of 4 images per post.');
+      const msg = 'You can upload a maximum of 4 images per post.';
+      setErrorMsg(msg);
+      toast.warning('Limit Reached', msg);
       return;
     }
 
@@ -114,7 +117,9 @@ export function CreatePostBox() {
       const uploadedUrls = await Promise.all(uploadPromises);
       setImages((prev) => [...prev, ...uploadedUrls]);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to upload image. Please try again.');
+      const msg = err?.message || 'Failed to upload image. Please try again.';
+      setErrorMsg(msg);
+      toast.error('Upload Failed', msg);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -126,7 +131,9 @@ export function CreatePostBox() {
   const handleAddImageUrl = () => {
     if (!imageUrlInput.trim()) return;
     if (images.length >= 4) {
-      setErrorMsg('A maximum of 4 images can be attached per post.');
+      const msg = 'A maximum of 4 images can be attached per post.';
+      setErrorMsg(msg);
+      toast.warning('Limit Reached', msg);
       return;
     }
     try {
@@ -136,7 +143,9 @@ export function CreatePostBox() {
       setShowUrlInput(false);
       setErrorMsg(null);
     } catch {
-      setErrorMsg('Please enter a valid image URL (e.g. https://...)');
+      const msg = 'Please enter a valid image URL (e.g. https://...)';
+      setErrorMsg(msg);
+      toast.error('Invalid URL', msg);
     }
   };
 
@@ -147,7 +156,9 @@ export function CreatePostBox() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) {
-      setErrorMsg('Please write something before publishing.');
+      const msg = 'Please write something before publishing.';
+      setErrorMsg(msg);
+      toast.warning('Empty Post', msg);
       return;
     }
 
@@ -165,9 +176,12 @@ export function CreatePostBox() {
       setImages([]);
       setIsExpanded(false);
 
+      toast.success('Post Published', 'Your business post is now live on the feed.');
       await queryClient.invalidateQueries({ queryKey: ['feed'] });
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to publish post. Please try again.');
+      const msg = err?.message || 'Failed to publish post. Please try again.';
+      setErrorMsg(msg);
+      toast.error('Publish Failed', msg);
     } finally {
       setIsSubmitting(false);
     }

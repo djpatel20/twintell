@@ -22,6 +22,7 @@ import {
   MoreHorizontal,
   Send,
   FileText,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Post } from '../../types';
 
@@ -82,6 +83,15 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+
+  const handleImageError = (idx: number) => {
+    setFailedImages((prev) => {
+      if (prev[idx]) return prev;
+      toast.error('Image Unavailable', 'One of the post images could not be loaded.');
+      return { ...prev, [idx]: true };
+    });
+  };
 
   const isOwner = company?.id === post.companyId;
   const isAdmin = user?.role === 'ADMIN';
@@ -278,33 +288,49 @@ export function PostCard({ post, onPostDeleted }: PostCardProps) {
         <>
           <div className="rounded-lg overflow-hidden border border-line bg-panel-sunk/30">
             {post.images.length === 1 ? (
-              <div
-                className="w-full flex items-center justify-center cursor-pointer group bg-panel-sunk/20"
-                onClick={() => setLightboxIndex(0)}
-                title="Click to view full image"
-              >
-                <img
-                  src={post.images[0]}
-                  alt="Post attachment"
-                  className="w-auto max-w-full h-auto max-h-[70vh] sm:max-h-[580px] object-contain mx-auto block group-hover:opacity-95 transition-opacity"
-                  loading="lazy"
-                />
-              </div>
+              failedImages[0] ? (
+                <div className="w-full py-8 text-center text-xs text-ink-muted flex flex-col items-center justify-center gap-1.5 bg-panel-sunk/20">
+                  <ImageIcon className="w-6 h-6 stroke-[1.5]" />
+                  <span>Image could not be loaded</span>
+                </div>
+              ) : (
+                <div
+                  className="w-full flex items-center justify-center cursor-pointer group bg-panel-sunk/20"
+                  onClick={() => setLightboxIndex(0)}
+                  title="Click to view full image"
+                >
+                  <img
+                    src={post.images[0]}
+                    alt="Post attachment"
+                    onError={() => handleImageError(0)}
+                    className="w-auto max-w-full h-auto max-h-[70vh] sm:max-h-[580px] object-contain mx-auto block group-hover:opacity-95 transition-opacity"
+                    loading="lazy"
+                  />
+                </div>
+              )
             ) : (
               <div className="grid grid-cols-2 gap-1.5 p-1.5">
                 {post.images.slice(0, 4).map((img, idx) => (
                   <div
                     key={idx}
                     className="relative aspect-square sm:aspect-[4/3] overflow-hidden rounded-md cursor-pointer group bg-panel-sunk"
-                    onClick={() => setLightboxIndex(idx)}
-                    title="Click to view full image"
+                    onClick={() => !failedImages[idx] && setLightboxIndex(idx)}
+                    title={failedImages[idx] ? 'Image unavailable' : 'Click to view full image'}
                   >
-                    <img
-                      src={img}
-                      alt={`Attachment ${idx + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
-                      loading="lazy"
-                    />
+                    {failedImages[idx] ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-ink-muted text-[11px] gap-1 p-2 bg-panel-sunk">
+                        <ImageIcon className="w-4 h-4 stroke-[1.5]" />
+                        <span>Unavailable</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={img}
+                        alt={`Attachment ${idx + 1}`}
+                        onError={() => handleImageError(idx)}
+                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-200"
+                        loading="lazy"
+                      />
+                    )}
                     {idx === 3 && post.images.length > 4 && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-semibold text-sm">
                         +{post.images.length - 4} more

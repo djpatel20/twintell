@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useCallback, useState } from 'react';
+import { X, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { toast } from '../../context/ToastContext';
 
 interface ImageLightboxProps {
   images: string[];
@@ -19,6 +20,11 @@ export function ImageLightbox({
   onNavigate,
 }: ImageLightboxProps) {
   const hasMultiple = images.length > 1;
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [currentIndex]);
 
   const handlePrev = useCallback(
     (e?: React.MouseEvent) => {
@@ -122,11 +128,23 @@ export function ImageLightbox({
         className="relative max-w-full max-h-[85vh] flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <img
-          src={currentImage}
-          alt={`Full view ${currentIndex + 1}`}
-          className="w-auto max-w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl select-none"
-        />
+        {hasError ? (
+          <div className="flex flex-col items-center justify-center p-8 bg-zinc-900/85 rounded-xl text-center text-zinc-400 space-y-2 border border-zinc-800 max-w-sm">
+            <AlertCircle className="w-10 h-10 text-rose-500" />
+            <p className="text-sm font-semibold text-white">Image Failed to Load</p>
+            <p className="text-xs text-zinc-400">The requested image could not be retrieved or is unavailable.</p>
+          </div>
+        ) : (
+          <img
+            src={currentImage}
+            alt={`Full view ${currentIndex + 1}`}
+            onError={() => {
+              setHasError(true);
+              toast.error('Image Unavailable', 'Could not load high-resolution image preview.');
+            }}
+            className="w-auto max-w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl select-none"
+          />
+        )}
       </div>
     </div>
   );

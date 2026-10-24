@@ -112,7 +112,9 @@ export default function CreatePostPage() {
     if (!files || files.length === 0) return;
 
     if (images.length + files.length > 4) {
-      setErrorMsg('You can attach a maximum of 4 images per post.');
+      const msg = 'You can attach a maximum of 4 images per post.';
+      setErrorMsg(msg);
+      toast.warning('Limit Reached', msg);
       return;
     }
 
@@ -154,7 +156,9 @@ export default function CreatePostPage() {
       const newUrls = await Promise.all(uploadPromises);
       setImages((prev) => [...prev, ...newUrls]);
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Failed to upload photo. Please check your connection or provide an image link.');
+      const msg = err?.message || 'Failed to upload photo. Please check your connection or provide an image link.';
+      setErrorMsg(msg);
+      toast.error('Upload Failed', msg);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -166,7 +170,9 @@ export default function CreatePostPage() {
   const handleAddImageUrl = () => {
     if (!imageUrlInput.trim()) return;
     if (images.length >= 4) {
-      setErrorMsg('A maximum of 4 images can be attached per post.');
+      const msg = 'A maximum of 4 images can be attached per post.';
+      setErrorMsg(msg);
+      toast.warning('Limit Reached', msg);
       return;
     }
     try {
@@ -176,7 +182,9 @@ export default function CreatePostPage() {
       setShowUrlInput(false);
       setErrorMsg(null);
     } catch {
-      setErrorMsg('Please enter a valid image URL (e.g. https://...)');
+      const msg = 'Please enter a valid image URL (e.g. https://...)';
+      setErrorMsg(msg);
+      toast.error('Invalid URL', msg);
     }
   };
 
